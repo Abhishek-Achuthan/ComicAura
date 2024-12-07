@@ -1,0 +1,325 @@
+:root {
+    --primary-color: #FF6B00;
+    --secondary-color: #FFA559;
+    --background-dark: #1A1A1A;
+    --background-light: #2A2A2A;
+    --text-color: #FFFFFF;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--background-dark);
+    color: var(--text-color);
+}
+
+/* Sidebar Styles */
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 280px;
+    background: var(--background-light);
+    color: var(--text-color);
+    transition: all 0.3s ease;
+    box-shadow: 2px 0 10px rgba(0,0,0,0.3);
+    z-index: 1000;
+}
+
+.sidebar-header {
+    padding: 20px;
+    text-align: center;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    background: rgba(0,0,0,0.2);
+}
+
+.sidebar-header h3 {
+    color: var(--primary-color);
+    margin: 0;
+    font-size: 24px;
+    font-weight: 600;
+}
+
+.nav-link {
+    color: var(--text-color) !important;
+    padding: 12px 20px;
+    transition: all 0.3s ease;
+    border-left: 4px solid transparent;
+}
+
+.nav-link:hover {
+    background: rgba(255,255,255,0.1);
+    color: var(--primary-color) !important;
+    border-left-color: var(--primary-color);
+}
+
+.nav-link.active {
+    background: rgba(255,255,255,0.1);
+    color: var(--primary-color) !important;
+    border-left-color: var(--primary-color);
+}
+
+.nav-link i {
+    width: 24px;
+    text-align: center;
+    margin-right: 8px;
+    color: var(--primary-color);
+}
+
+/* Main Content Styles */
+.main-content {
+    margin-left: 280px;
+    padding: 20px;
+    min-height: 100vh;
+}
+
+/* Navbar Styles */
+.top-navbar {
+    background: var(--background-light);
+    padding: 1rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    border-radius: 10px;
+    color: var(--text-color);
+}
+
+/* Stats Cards */
+.stats-card {
+    background: var(--background-light);
+    color: var(--text-color);
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    transition: transform 0.3s ease;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+.stats-card:hover {
+    transform: translateY(-5px);
+}
+
+.stats-card i {
+    color: var(--primary-color);
+    opacity: 0.8;
+}
+
+.stats-card h3 {
+    font-size: 2rem;
+    margin: 0;
+    color: var(--primary-color);
+}
+
+.stats-card p {
+    margin: 0;
+    opacity: 0.9;
+}
+
+/* Card Styles */
+.card {
+    background: var(--background-light);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+.card-header {
+    background: rgba(0,0,0,0.2);
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    padding: 1.5rem;
+    color: var(--text-color);
+}
+
+/* Search Form */
+.search-form {
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.search-form .input-group {
+    background: var(--background-dark);
+    border: 1px solid rgba(255, 107, 0, 0.2);
+    border-radius: 50px;
+    padding: 5px;
+}
+
+.search-form input {
+    background: transparent !important;
+    border: none !important;
+    color: var(--text-color);
+    padding: 0.75rem 1.5rem;
+    box-shadow: none !important;
+}
+
+.search-form input:focus {
+    outline: none;
+}
+
+.search-form input::placeholder {
+    color: rgba(255,255,255,0.5);
+}
+
+.search-form .btn-primary {
+    background: var(--primary-color);
+    border: none;
+    border-radius: 50px;
+    padding: 0.75rem 1.5rem;
+    margin-right: 5px;
+}
+
+.search-form .btn-primary:hover {
+    background: var(--secondary-color);
+}
+
+/* Table Styles */
+.table-container {
+    background: var(--background-dark);
+    border-radius: 10px;
+    padding: 1rem;
+    border: 1px solid rgba(255, 107, 0, 0.2);
+}
+
+.table {
+    color: var(--text-color);
+    margin-bottom: 0;
+}
+
+.table thead {
+    background: var(--background-light);
+}
+
+.table th {
+    font-weight: 600;
+    color: var(--primary-color);
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    border-top: none;
+    border-color: rgba(255,255,255,0.1);
+    padding: 1rem;
+}
+
+.table td {
+    vertical-align: middle;
+    border-color: rgba(255,255,255,0.1);
+    padding: 1rem;
+    background: var(--background-dark);
+    color: #FFFFFF;
+    font-weight: 400;
+}
+
+.table td a {
+    color: #FFFFFF;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.table td a:hover {
+    color: var(--primary-color);
+}
+
+.table tbody tr {
+    transition: all 0.3s ease;
+}
+
+.table tbody tr:hover {
+    background: rgba(255, 107, 0, 0.1);
+}
+
+.table .user-email {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.table .user-phone {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.table .user-name {
+    color: #FFFFFF;
+    font-weight: 500;
+}
+
+/* Status Badge */
+.badge {
+    padding: 0.6em 1.2em;
+    font-weight: 500;
+    border-radius: 50px;
+}
+
+.badge-success {
+    background: rgba(46, 213, 115, 0.2);
+    color: #2ed573;
+}
+
+.badge-danger {
+    background: rgba(255, 71, 87, 0.2);
+    color: #ff4757;
+}
+
+/* Button Styles */
+.btn {
+    padding: 0.5rem 1.5rem;
+    border-radius: 5px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-primary:hover {
+    background: var(--secondary-color);
+    border-color: var(--secondary-color);
+}
+
+/* Pagination */
+.pagination {
+    margin-bottom: 0;
+}
+
+.page-link {
+    background: var(--background-light);
+    color: var(--text-color);
+    border: 1px solid rgba(255,255,255,0.1);
+    margin: 0 2px;
+    border-radius: 5px;
+}
+
+.page-link:hover {
+    background: var(--primary-color);
+    color: var(--text-color);
+    border-color: var(--primary-color);
+}
+
+.page-item.active .page-link {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+/* Dark theme overrides for form elements */
+.form-control {
+    background-color: var(--background-dark);
+    border-color: rgba(255,255,255,0.1);
+    color: var(--text-color);
+}
+
+.form-control:focus {
+    background-color: var(--background-dark);
+    border-color: var(--primary-color);
+    color: var(--text-color);
+    box-shadow: 0 0 0 0.25rem rgba(255, 107, 0, 0.25);
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+    .sidebar {
+        width: 80px;
+    }
+    .sidebar .nav-link span {
+        display: none;
+    }
+    .main-content {
+        margin-left: 80px;
+    }
+}

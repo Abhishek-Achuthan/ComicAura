@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ComicAura Admin - Category Management</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@10/dist/sweetalert2.min.css"/>
+    <link rel="stylesheet" href="/css/admin/category.css">
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h3>ComicAura</h3>
+        </div>
+        <nav class="mt-3">
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/dashboard">
+                        <i class="fas fa-home"></i> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" href="/admin/product">
+                        <i class="fas fa-box"></i> Products
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/user">
+                        <i class="fas fa-users"></i> Users
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/category">
+                        <i class="fas fa-tags"></i> Categories
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/orders">
+                        <i class="fas fa-shopping-cart"></i> Orders
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/logout">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="content-header">
+            <div>
+                <h2 class="content-title">Categories Management</h2>
+            </div>
+        </div>
+
+        <div class="search-container">
+            <form action="/admin/category/" method="get">
+                <div class="input-group">
+                    <input type="text" class="form-control" placeholder="Search categories" name="search"/>
+                    <button class="btn" type="submit">
+                        <i class="fas fa-search"></i> Search
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <form method="post" action="/admin/addCategory" id="addCategoryForm">
+                            <div class="mb-4">
+                                <label for="product_name" class="form-label">Name</label>
+                                <input type="text" name="name" placeholder="Enter category name" class="form-control" id="categorieName" required/>
+                                <div id="name-error" class="error-message"></div>
+                            </div>
+                            <div class="mb-4">
+                                <label class="form-label">Description</label>
+                                <textarea placeholder="Enter category description" name="description" class="form-control" id="descriptionId" rows="4" required></textarea>
+                                <div id="description-error" class="error-message"></div>
+                            </div>
+                            <div class="d-grid">
+                                <button class="btn btn-primary" type="submit">
+                                    <i class="fas fa-plus"></i> Create Category
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="col-md-8 ml-10">
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th></th>
+                                        <th>Name</th>
+                                        <th>Description</th>
+                                        <th>Status</th>
+                                        <th>List/Unlist</th>
+                                        <th>Edit</th>
+                                        <th>Delete</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <% if(categories && categories.length>0) { %>
+                                    <% categories.forEach(category => { %>
+                                    <tr data-category-id="<%= category._id %>">
+                                        <td></td>
+                                        <td><%= category.name %></td>
+                                        <td><%= category.description || 'N/A' %></td>
+                                        <td>
+                                            <span class="badge rounded-pill alert-<%= category.isActive ? 'success' : 'danger' %>">
+                                                <%= category.isActive ? 'Listed' : 'Unlisted' %>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <% if(category.isActive) { %>
+                                            <button class="btn btn-danger mb-2" onclick="toggleCategory('<%= category._id %>', false)">
+                                                <i class="fas fa-ban"></i> Unlist
+                                            </button>
+                                            <% } else { %>
+                                            <button class="btn btn-success" onclick="toggleCategory('<%= category._id %>', true)">
+                                                <i class="fas fa-check"></i> List
+                                            </button>
+                                            <% } %>
+                                        </td>
+                                        <td>
+                                            <a href="/admin/editCategory/<%= category._id %>" class="btn btn-info">
+                                                <i class="fas fa-edit"></i> Edit
+                                            </a>
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-danger" onclick="deleteCategory('<%= category._id %>')">
+                                                <i class="fas fa-trash"></i> Delete
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <% }); %>
+                                    <% } else { %>
+                                        <tr>
+                                            <td colspan="7" class="text-center py-5">
+                                                <div class="text-muted">
+                                                    <i class="fas fa-users fa-3x mb-3"></i>
+                                                    <p>No Categorys Found</p>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <% } %>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10/dist/sweetalert2.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script>
+
+        document.getElementById('addCategoryForm').addEventListener('submit', async(e) => {
+            e.preventDefault();
+            
+            const name = document.getElementById('categorieName').value.trim();
+            const description = document.getElementById('descriptionId').value.trim();
+
+            if (!name || !description) {
+                Swal.fire('Error', 'Please fill in all fields', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/admin/addCategory', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ name, description })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    await Swal.fire({
+                        icon: 'success',
+                        title: 'Success!',
+                        text: result.message,
+                        showConfirmButton: false,
+                        timer: 1500
+                    });
+
+
+                    const tbody = document.querySelector('table tbody');
+                    const newRow = `
+                        <tr data-category-id="${result.category._id}">
+                            <td></td>
+                            <td>${result.category.name}</td>
+                            <td>${result.category.description || 'N/A'}</td>
+                            <td>
+                                <span class="badge rounded-pill alert-success">
+                                    Listed
+                                </span>
+                            </td>
+                            <td>
+                                <button class="btn btn-danger mb-2" onclick="toggleCategory('${result.category._id}', false)">
+                                    <i class="fas fa-ban"></i> Unlist
+                                </button>
+                            </td>
+                            <td>
+                                <a href="/admin/editCategory/${result.category._id}" class="btn btn-info">
+                                    <i class="fas fa-edit"></i> Edit
+                                </a>
+                            </td>
+                            <td>
+                                <button class="btn btn-danger" onclick="deleteCategory('${result.category._id}')">
+                                    <i class="fas fa-trash"></i> Delete
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                    tbody.insertAdjacentHTML('beforeend', newRow);
+                    document.getElementById('addCategoryForm').reset();
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error!',
+                        text: result.message || 'Failed to add category'
+                    });
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: 'Something went wrong while adding the category'
+                });
+            }
+        });
+        
+        async function toggleCategory(categoryId, isList) {
+            try {
+                const response = await fetch(`/admin/category/${categoryId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ isActive: isList })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    await Swal.fire({
+                        icon: 'success',
+                        title: 'Success!',
+                        text: result.message,
+                        showConfirmButton: false,
+                        timer: 1500
+                    });
+
+                  
+                    const row = document.querySelector(`tr[data-category-id="${categoryId}"]`);
+                    const statusBadge = row.querySelector('.badge');
+                    const toggleButton = row.querySelector('.btn-danger, .btn-success');
+
+                    statusBadge.className = `badge rounded-pill alert-${isList ? 'success' : 'danger'}`;
+                    statusBadge.textContent = isList ? 'Listed' : 'Unlisted';
+
+                    // Update toggle button
+                    if (isList) {
+                        toggleButton.className = 'btn btn-danger mb-2';
+                        toggleButton.innerHTML = '<i class="fas fa-ban"></i> Unlist';
+                        toggleButton.onclick = () => toggleCategory(categoryId, false);
+                    } else {
+                        toggleButton.className = 'btn btn-success';
+                        toggleButton.innerHTML = '<i class="fas fa-check"></i> List';
+                        toggleButton.onclick = () => toggleCategory(categoryId, true);
+                    }
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error!',
+                        text: result.message || 'Failed to update category status'
+                    });
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: 'Something went wrong while updating the category'
+                });
+            }
+        }
+        
+        async function deleteCategory(categoryId) {
+            try {
+                const result = await Swal.fire({
+                    title: 'Are you sure?',
+                    text: "This category will be deleted!",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'Yes, delete it!'
+                });
+
+                if (result.isConfirmed) {
+                    const response = await fetch(`/admin/category/${categoryId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        const row = document.querySelector(`tr[data-category-id="${categoryId}"]`);
+                        row.style.animation = 'fadeOut 0.5s ease forwards';
+                        setTimeout(() => {
+                            row.remove();
+                        }, 500);
+
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Deleted!',
+                            text: data.message,
+                            showConfirmButton: false,
+                            timer: 1500
+                        });
+                    } else {
+                        Swal.fire('Error!', data.message, 'error');
+                    }
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                Swal.fire('Error!', 'Failed to delete category', 'error');
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+
+            const rows = document.querySelectorAll('tbody tr');
+            rows.forEach((row, index) => {
+                row.style.setProperty('--row-index', index);
+            });
+
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    document.querySelector(this.getAttribute('href')).scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                });
+            });
+
+            document.querySelectorAll('.btn').forEach(button => {
+                button.removeEventListener('click', addRippleEffect);
+            });
+
+            document.querySelectorAll('.btn').forEach(button => {
+                button.addEventListener('click', addRippleEffect);
+            });
+        });
+
+        function addRippleEffect(e) {
+            this.querySelectorAll('.ripple').forEach(ripple => ripple.remove());
+            
+            const ripple = document.createElement('div');
+            ripple.classList.add('ripple');
+            this.appendChild(ripple);
+            
+            const rect = this.getBoundingClientRect();
+            const size = Math.max(rect.width, rect.height);
+            
+            ripple.style.width = ripple.style.height = size + 'px';
+            ripple.style.left = e.clientX - rect.left - size/2 + 'px';
+            ripple.style.top = e.clientY - rect.top - size/2 + 'px';
+            
+            ripple.addEventListener('animationend', () => {
+                ripple.remove();
+            });
+        }
+        
+    </script>
+</body>
+</html>

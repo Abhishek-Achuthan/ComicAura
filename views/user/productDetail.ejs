@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ComicAura - Premium Anime Merchandise</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@8/swiper-bundle.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link rel="stylesheet" href="/css/user/productDetail.css">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg fixed-top">
+        <div class="container">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <a class="navbar-brand" href="#">ComicAura</a>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Shop</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Categories</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">About</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Contact</a>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="d-flex align-items-center">
+                <div class="search-wrapper me-3 d-none d-lg-block">
+                    <i class="bi bi-search search-icon"></i>
+                    <input type="search" class="form-control search-input" placeholder="Search...">
+                </div>
+                <div class="user-dropdown">
+                    <a class="icon-btn" id="userDropdownBtn">
+                        <i class="bi bi-person-circle"></i>
+                    </a>
+                    <div class="user-dropdown-content" id="userDropdownContent">
+                        <a href="/profile"><i class="bi bi-person"></i>Profile</a>
+                        <a href="/orders"><i class="bi bi-box-seam"></i>My Orders</a>
+                        <a href="/wishlist"><i class="bi bi-heart"></i>Wishlist</a>
+                        <div class="user-dropdown-divider"></div>
+                        <a href="/logout"><i class="bi bi-box-arrow-right"></i>Logout</a>
+                    </div>
+                </div>
+                <a href="/cart" class="icon-btn">
+                    <i class="bi bi-cart3"></i>
+                    <span class="cart-count">0</span>
+                </a>
+            </div>
+        </div>
+    </nav>
+<div class="container mt-5 pt-3">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/" class="text-decoration-none">Home</a></li>
+            <li class="breadcrumb-item"><a href="/shop" class="text-decoration-none">Shop</a></li>
+            <li class="breadcrumb-item active" aria-current="page"><%= product.name %></li>
+        </ol>
+    </nav>
+</div>
+    <main class="py-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-6 mb-4">
+                    <div class="product-gallery">
+                        <div class="swiper gallery-main mb-3">
+                            <div class="swiper-wrapper">
+                                <% product.images.forEach(image => { %>
+                                <div class="swiper-slide">
+                                    <div class="zoom-container">
+                                        <img src="<%= image %>" alt="<%= product.name %>" class="img-fluid rounded zoom-image">
+                                    </div>
+                                </div>
+                                <% }); %>
+                            </div>
+                            <div class="swiper-button-next"></div>
+                            <div class="swiper-button-prev"></div>
+                        </div>
+                        <div class="swiper gallery-thumbs">
+                            <div class="swiper-wrapper">
+                                <% product.images.forEach(image => { %>
+                                <div class="swiper-slide">
+                                    <img src="<%= image %>" alt="<%= product.name %> thumbnail" class="img-fluid rounded">
+                                </div>
+                                <% }); %>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="product-details p-4 bg-dark text-white rounded shadow">
+                        <h1 class="mb-4 product-title display-5 fw-bold"><%= product.name %></h1>
+                        <div class="price-stock-container bg-dark bg-opacity-75 p-3 rounded mb-4">
+                            <div class="d-flex justify-content-between align-items-center flex-wrap">
+                                <div class="price-container">
+                                    <% if (product.salePrice) { %>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="fs-2 fw-bold text-success"><%= product.formattedSalePrice %></span>
+                                            <span class="text-secondary text-decoration-line-through"><%= product.formattedRegularPrice %></span>
+                                            <span class="badge bg-danger px-3 py-2"><%= product.discount %>% OFF</span>
+                                        </div>
+                                    <% } else { %>
+                                        <span class="fs-2 fw-bold text-success"><%= product.formattedRegularPrice %></span>
+                                    <% } %>
+                                </div>
+                                <div class="rating bg-dark bg-opacity-50 p-2 rounded">
+                                    <i class="fas fa-star text-warning"></i>
+                                    <i class="fas fa-star text-warning"></i>
+                                    <i class="fas fa-star text-warning"></i>
+                                    <i class="fas fa-star text-warning"></i>
+                                    <i class="fas fa-star-half-alt text-warning"></i>
+                                    <span class="ms-2 text-light">(4.5)</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="stock-quantity-container bg-dark bg-opacity-75 p-3 rounded mb-4">
+                            <!-- Coupon Section -->
+                            <div class="coupon-section bg-dark bg-opacity-75 p-3 rounded mb-4">
+                                <div class="d-flex align-items-center gap-2 mb-3">
+                                    <i class="fas fa-tag text-warning"></i>
+                                    <h5 class="mb-0">Available Offers</h5>
+                                </div>
+                                <div class="coupon-list">
+                                    <div class="coupon-item d-flex align-items-center gap-2 mb-2">
+                                        <i class="fas fa-circle text-success" style="font-size: 8px;"></i>
+                                        <span>Use code <strong class="text-warning">FIRST10</strong> for 10% off on your first order</span>
+                                    </div>
+                                    <div class="coupon-item d-flex align-items-center gap-2 mb-2">
+                                        <i class="fas fa-circle text-success" style="font-size: 8px;"></i>
+                                        <span>Free shipping on orders above ₹999</span>
+                                    </div>
+                                    <div class="coupon-item d-flex align-items-center gap-2">
+                                        <i class="fas fa-circle text-success" style="font-size: 8px;"></i>
+                                        <span>Get additional 5% off on prepaid orders</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Policy Highlights -->
+                            <div class="policy-highlights bg-dark bg-opacity-75 p-3 rounded mb-4">
+                                <div class="row g-3">
+                                    <div class="col-6">
+                                        <div class="policy-item text-center p-2 rounded" style="background: rgba(255,255,255,0.05);">
+                                            <i class="fas fa-truck text-warning mb-2 fs-4"></i>
+                                            <p class="mb-0 small">Fast Delivery<br>2-4 Business Days</p>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="policy-item text-center p-2 rounded" style="background: rgba(255,255,255,0.05);">
+                                            <i class="fas fa-undo text-warning mb-2 fs-4"></i>
+                                            <p class="mb-0 small">Easy Returns<br>10-Day Policy</p>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="policy-item text-center p-2 rounded" style="background: rgba(255,255,255,0.05);">
+                                            <i class="fas fa-shield-alt text-warning mb-2 fs-4"></i>
+                                            <p class="mb-0 small">Secure Payments<br>100% Protected</p>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="policy-item text-center p-2 rounded" style="background: rgba(255,255,255,0.05);">
+                                            <i class="fas fa-certificate text-warning mb-2 fs-4"></i>
+                                            <p class="mb-0 small">Genuine Products<br>Quality Assured</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="input-group quantity-selector" style="width: 150px;">
+                                        <button class="btn btn-outline-light" type="button" id="decreaseQuantity">-</button>
+                                        <input type="number" class="form-control text-center bg-dark text-light" id="quantity" value="1" min="1" max="<%= product.stock %>">
+                                        <button class="btn btn-outline-light" type="button" id="increaseQuantity">+</button>
+                                    </div>
+                                    <div class="stock-status">
+                                        <% if (product.stock > 10) { %>
+                                            <span class="badge bg-success px-3 py-2">In Stock (<%= product.stock %> available)</span>
+                                        <% } else if (product.stock > 0) { %>
+                                            <span class="badge bg-warning text-dark px-3 py-2">Low Stock (Only <%= product.stock %> left)</span>
+                                        <% } else { %>
+                                            <span class="badge bg-danger px-3 py-2">Out of Stock</span>
+                                        <% } %>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="d-grid gap-3 d-md-flex">
+                            <button class="btn btn-primary btn-lg flex-grow-1" onclick="addToCart('<%= product._id %>')">
+                                <i class="fas fa-cart-plus me-2"></i>Add to Cart
+                            </button>
+                            <button class="btn btn-outline-light btn-lg" onclick="toggleWishlist('<%= product._id %>')">
+                                <i class="<%= product.isWishlisted ? 'fas' : 'far' %> fa-heart"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mt-5">
+                <div class="col-12">
+                    <ul class="nav nav-tabs justify-content-center" id="productTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="description-tab" data-bs-toggle="tab" data-bs-target="#description" type="button" role="tab">Description</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="reviews-tab" data-bs-toggle="tab" data-bs-target="#reviews" type="button" role="tab">Reviews</button>
+                        </li>
+                    </ul>
+                    <div class="tab-content mt-3" id="productTabsContent">
+                        <div class="tab-pane fade show active" id="description" role="tabpanel">
+                            <div class="container">
+                                <div class="row justify-content-center">
+                                    <div class="col-md-8">
+                                        <p class="text-center"><%= product.description %></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="reviews" role="tabpanel">
+                            <div class="container">
+                                <div class="row justify-content-center">
+                                    <div class="col-md-8">
+                                        <div class="d-flex justify-content-between align-items-center mb-4">
+                                            <h3>Customer Reviews</h3>
+                                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#reviewModal">Write a Review</button>
+                                        </div>
+                                        <div id="reviewsList">
+                                            <!-- Reviews will be dynamically added here -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mt-5">
+                <div class="col-12">
+                    <h2 class="text-center mb-4">You May Also Like</h2>
+                    <div class="swiper suggested-products-slider">
+                        <div class="swiper-wrapper">
+                            <% relatedProducts.forEach(product => { %>
+                            <div class="swiper-slide">
+                                <div class="card h-100 product-card bg-dark text-white">
+                                    <img src="<%= product.images[0] %>" class="card-img-top" alt="<%= product.name %>">
+                                    <div class="card-body d-flex flex-column">
+                                        <h5 class="card-title"><%= product.name %></h5>
+                                        <div class="price-container mb-3">
+                                            <% if (product.salePrice) { %>
+                                                <span class="fs-5 fw-bold text-success"><%= product.formattedSalePrice %></span>
+                                                <span class="text-secondary text-decoration-line-through"><%= product.formattedRegularPrice %></span>
+                                                <span class="badge bg-danger">-<%= product.discount %>%</span>
+                                            <% } else { %>
+                                                <span class="fs-5 fw-bold text-success"><%= product.formattedRegularPrice %></span>
+                                            <% } %>
+                                        </div>
+                                        <a href="/product/<%= product._id %>" class="btn btn-primary mt-auto">View Details</a>
+                                    </div>
+                                </div>
+                            </div>
+                            <% }); %>
+                        </div>
+                        <div class="swiper-button-next"></div>
+                        <div class="swiper-button-prev"></div>
+                        <div class="swiper-pagination"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+<footer class="py-5">
+    <div class="container">
+        <div class="row g-4">
+            <div class="col-lg-3 col-md-6">
+                <h3 class="footer-title">ComicAura</h3>
+                <p>Your ultimate destination for premium anime merchandise.</p>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <h4 class="footer-title">Quick Links</h4>
+                <ul class="footer-links">
+                    <li><a href="/">Home</a></li>
+                    <li><a href="/shop">Shop</a></li>
+                    <li><a href="/categories">Categories</a></li>
+                    <li><a href="/about">About Us</a></li>
+                    <li><a href="/contact">Contact</a></li>
+                </ul>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <h4 class="footer-title">Customer Service</h4>
+                <ul class="footer-links">
+                    <li><a href="/faq">FAQ</a></li>
+                    <li><a href="/shipping-returns">Shipping & Returns</a></li>
+                    <li><a href="/terms">Terms & Conditions</a></li>
+                    <li><a href="/privacy">Privacy Policy</a></li>
+                </ul>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <h4 class="footer-title">Contact Us</h4>
+                <p>1234 Anime Street</p>
+                <p>Tokyo, Japan 123456</p>
+                <p>Phone: +1 (123) 456-7890</p>
+                <p>Email: info@comicaura.com</p>
+            </div>
+        </div>
+        <div class="text-center mt-4 pt-4 border-top border-secondary">
+            <p>&copy; 2023 ComicAura. All rights reserved.</p>
+        </div>
+    </div>
+</footer>
+
+    <!-- Modals -->
+    <div class="modal fade" id="reviewModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Write a Review</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="reviewForm">
+                        <div class="mb-3">
+                            <label for="reviewTitle" class="form-label">Title</label>
+                            <input type="text" class="form-control" id="reviewTitle" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="reviewRating" class="form-label">Rating</label>
+                            <select class="form-select" id="reviewRating" required>
+                                <option value="">Select a rating</option>
+                                <option value="5">5 stars</option>
+                                <option value="4">4 stars</option>
+                                <option value="3">3 stars</option>
+                                <option value="2">2 stars</option>
+                                <option value="1">1 star</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="reviewContent" class="form-label">Review</label>
+                            <textarea class="form-control" id="reviewContent" rows="3" required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Submit Review</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="sizeChartModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Size Chart</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <img src="https://via.placeholder.com/400x300?text=Size+Chart" alt="Size Chart" class="img-fluid">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const userDropdownBtn = document.getElementById('userDropdownBtn');
+        const userDropdownContent = document.getElementById('userDropdownContent');
+
+        userDropdownBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            userDropdownContent.style.display = userDropdownContent.style.display === 'block' ? 'none' : 'block';
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!userDropdownBtn.contains(e.target) && !userDropdownContent.contains(e.target)) {
+                userDropdownContent.style.display = 'none';
+            }
+        });
+        document.addEventListener('DOMContentLoaded', function() {
+            const zoomContainers = document.querySelectorAll('.zoom-container');
+            
+            zoomContainers.forEach(container => {
+                const img = container.querySelector('.zoom-image');
+                
+                container.addEventListener('mousemove', (e) => {
+                    const { left, top, width, height } = container.getBoundingClientRect();
+                    const x = (e.clientX - left) / width * 100;
+                    const y = (e.clientY - top) / height * 100;
+                    
+                    img.style.transformOrigin = `${x}% ${y}%`;
+                });
+                
+                container.addEventListener('mouseenter', () => {
+                    img.style.transform = 'scale(2)';
+                });
+                
+                container.addEventListener('mouseleave', () => {
+                    img.style.transform = 'scale(1)';
+                });
+            });
+        });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/swiper@8/swiper-bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize the suggested products slider
+            new Swiper('.suggested-products-slider', {
+                slidesPerView: 1,
+                spaceBetween: 20,
+                navigation: {
+                    nextEl: '.swiper-button-next',
+                    prevEl: '.swiper-button-prev',
+                },
+                pagination: {
+                    el: '.swiper-pagination',
+                    clickable: true,
+                },
+                breakpoints: {
+                    640: {
+                        slidesPerView: 2,
+                    },
+                    768: {
+                        slidesPerView: 3,
+                    },
+                    1024: {
+                        slidesPerView: 4,
+                    },
+                },
+                autoplay: {
+                    delay: 3000,
+                    disableOnInteraction: false,
+                },
+                loop: true
+            });
+        });
+    </script>
+    <script src="/js/user/productDetail.js"></script>
+
+ 
+</body>
+</html>
