@@ -3,6 +3,7 @@ const router = express.Router();
 const multer = require('multer');
 const adminController = require("../controllers/admin/adminController");
 const adminAuth = require("../middleware/adminAuth");
+const orderController = require('../controllers/admin/orderController');
 
 const upload = multer({
     storage: multer.memoryStorage(),
@@ -38,6 +39,13 @@ router.get("/editProduct/:id", adminAuth.isAdmin, adminController.loadEditProduc
 router.post("/editProduct/:id", adminAuth.isAdmin, upload.array('images', 10), adminController.updateProduct);
 router.post("/product/:productId/deleteImage", adminAuth.isAdmin, adminController.deleteProductImage);
 router.put('/product/:id/delete', adminAuth.isAdmin, adminController.deleteProduct);
+
+router.get('/orders', adminAuth.isAdmin, orderController.listOrders);
+router.get('/orders/:orderId', adminAuth.isAdmin, orderController.getOrderDetails);
+router.put('/order/:orderId/status', adminAuth.isAdmin, orderController.updateOrderStatus);
+router.post('/order/:orderId/cancel', adminAuth.isAdmin, orderController.cancelOrderAdmin);
+router.put('/product/:productId/stock', adminAuth.isAdmin, orderController.updateStock);
+router.get('/order-stats', adminAuth.isAdmin, orderController.getOrderStats);
 
 router.get("/logout", adminAuth.isAdmin, adminController.logout);
 

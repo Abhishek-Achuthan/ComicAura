@@ -1,0 +1,656 @@
+/* Profile Page Styles */
+.profile-page {
+    background: var(--background-dark);
+    min-height: 100vh;
+    padding-top: 80px;
+}
+
+/* Sidebar Styles */
+.profile-sidebar {
+    background: var(--background-light);
+    border-radius: 15px;
+    padding: 2rem;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+
+.edit-overlay {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    background: var(--primary-color);
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.edit-overlay:hover {
+    background: var(--primary-dark-color);
+    transform: scale(1.1);
+}
+
+.edit-icon {
+    color: white;
+    cursor: pointer;
+    margin: 0;
+}
+
+.profile-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.profile-nav .nav-item {
+    background: transparent;
+    border: none;
+    padding: 1rem;
+    border-radius: 8px;
+    color: var(--text-color);
+    text-align: left;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.profile-nav .nav-item:hover {
+    background: rgba(var(--primary-color-rgb), 0.1);
+}
+
+.profile-nav .nav-item.active {
+    background: var(--primary-color);
+    color: white;
+}
+
+/* Overview Section Styles */
+.overview-card {
+    background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
+    border: 1px solid #333;
+    border-radius: 20px;
+    overflow: hidden;
+}
+
+.overview-header {
+    padding: 2rem;
+    background: linear-gradient(145deg, #3a1f5d, #2a1245);
+    border-bottom: 1px solid #444;
+}
+
+.profile-avatar {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(145deg, #4a2f6d, #3a1f5d);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 3px solid #6a3f8d;
+}
+
+.profile-avatar i {
+    font-size: 2.5rem;
+    color: #fff;
+}
+
+.user-name {
+    color: #fff;
+    font-size: 1.8rem;
+    font-weight: 600;
+    margin-bottom: 0.3rem;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.user-email {
+    color: #b8b8b8;
+    font-size: 1rem;
+}
+
+.stats-container {
+    padding: 1.5rem;
+}
+
+.stat-card {
+    background: linear-gradient(145deg, #2d2d2d, #222);
+    border: 1px solid #333;
+    border-radius: 15px;
+    padding: 1.5rem;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+}
+
+.stat-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+}
+
+.stat-icon.orders {
+    background: linear-gradient(145deg, #2b5876, #4e4376);
+}
+
+.stat-icon.wishlist {
+    background: linear-gradient(145deg, #753a88, #cc2b5e);
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 0.5rem;
+}
+
+.stat-label {
+    color: #b8b8b8;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.account-details {
+    padding: 2rem;
+    border-top: 1px solid #333;
+}
+
+.detail-card {
+    background: linear-gradient(145deg, #2d2d2d, #222);
+    border: 1px solid #333;
+    border-radius: 15px;
+    padding: 1.5rem;
+    height: 100%;
+}
+
+.detail-label {
+    color: #888;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 0.5rem;
+}
+
+.detail-value {
+    color: #fff;
+    font-size: 1.1rem;
+    font-weight: 500;
+}
+
+.badge-active {
+    background: linear-gradient(145deg, #00b09b, #96c93d);
+    border: none;
+    padding: 0.5rem 1rem;
+}
+
+.badge-blocked {
+    background: linear-gradient(145deg, #cb2d3e, #ef473a);
+    border: none;
+    padding: 0.5rem 1rem;
+}
+
+.section-title {
+    color: #fff;
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Content Sections */
+.profile-section {
+    display: none;
+    background: var(--background-light);
+    border-radius: 15px;
+    padding: 2rem;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.profile-section.active {
+    display: block;
+}
+
+/* Stats Cards */
+.profile-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: var(--background-dark);
+    padding: 1.5rem;
+    border-radius: 12px;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+}
+
+.stat-card i {
+    font-size: 2rem;
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+}
+
+.stat-card h4 {
+    font-size: 1.5rem;
+    color: var(--text-color);
+    margin-bottom: 0.5rem;
+}
+
+.stat-card p {
+    color: var(--text-muted);
+    margin: 0;
+}
+
+/* Activity Timeline */
+.activity-timeline {
+    margin-top: 1.5rem;
+}
+
+.activity-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.activity-icon {
+    background: rgba(var(--primary-color-rgb), 0.1);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary-color);
+}
+
+.activity-content p {
+    margin: 0;
+    color: var(--text-color);
+}
+
+.activity-content small {
+    color: var(--text-muted);
+}
+
+/* Orders Section */
+.order-card {
+    background: var(--background-dark);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.order-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.badge {
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+}
+
+.badge.pending {
+    background: #ffd700;
+    color: #000;
+}
+
+.badge.delivered {
+    background: #00ff00;
+    color: #000;
+}
+
+.badge.processing {
+    background: #ff8c00;
+    color: #fff;
+}
+
+.order-items {
+    margin: 1rem 0;
+}
+
+.order-item {
+    display: flex;
+    gap: 1rem;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.order-item img {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.order-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1rem;
+}
+
+/* Wishlist Section */
+.wishlist-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1.5rem;
+}
+
+.wishlist-item {
+    background: var(--background-dark);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.wishlist-item:hover {
+    transform: translateY(-5px);
+}
+
+.item-image {
+    position: relative;
+    padding-top: 100%;
+}
+
+.item-image img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.remove-wishlist {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    background: rgba(0, 0, 0, 0.5);
+    border: none;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.remove-wishlist:hover {
+    background: rgba(255, 0, 0, 0.8);
+}
+
+.item-details {
+    padding: 1rem;
+}
+
+/* Settings Section */
+.settings-form {
+    max-width: 600px;
+}
+
+.form-control {
+    background: var(--background-dark);
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+}
+
+.form-control:focus {
+    background: var(--background-dark);
+    border-color: var(--primary-color);
+    color: var(--text-color);
+    box-shadow: 0 0 0 0.25rem rgba(var(--primary-color-rgb), 0.25);
+}
+
+/* Address Type Labels */
+.address-type-label {
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(255, 255, 255, 0.1) !important;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    position: relative;
+}
+
+.address-type-label:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--primary-color) !important;
+    transform: translateY(-2px);
+}
+
+/* Hide default radio button */
+.form-check-input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+}
+
+/* Custom radio button */
+.form-check-input[type="radio"] + .address-type-label::before {
+    content: '';
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    background: transparent;
+    transition: all 0.3s ease;
+}
+
+/* Custom radio button when checked */
+.form-check-input[type="radio"]:checked + .address-type-label::before {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+/* Inner dot for checked state */
+.form-check-input[type="radio"]:checked + .address-type-label::after {
+    content: '';
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    width: 10px;
+    height: 10px;
+    background: white;
+    border-radius: 50%;
+}
+
+.form-check-input:checked + .address-type-label {
+    background: rgba(var(--primary-color-rgb), 0.2);
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 15px rgba(var(--primary-color-rgb), 0.3);
+}
+
+.address-type-label i {
+    transition: all 0.3s ease;
+}
+
+.address-type-label:hover i,
+.form-check-input:checked + .address-type-label i {
+    transform: scale(1.1);
+}
+
+/* Custom Checkbox Styling */
+.form-check-input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    margin-top: 0.25em;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    background-color: transparent;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.form-check-input[type="checkbox"]:checked {
+    background-color: transparent;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 10px rgba(var(--primary-color-rgb), 0.3);
+}
+
+/* Custom checkmark */
+.form-check-input[type="checkbox"]:checked::after {
+    content: '✓';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #ff8c00;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.form-check-input[type="checkbox"]:hover {
+    border-color: var(--primary-color);
+}
+
+.form-check-input[type="checkbox"]:focus {
+    box-shadow: 0 0 0 0.25rem rgba(var(--primary-color-rgb), 0.25);
+    border-color: var(--primary-color);
+}
+
+/* Style for the checkbox label */
+.form-check-label {
+    cursor: pointer;
+    padding-left: 0.5rem;
+}
+
+/* Empty States */
+.empty-state {
+    text-align: center;
+    padding: 3rem;
+}
+
+.empty-state i {
+    font-size: 4rem;
+    color: var(--text-muted);
+    margin-bottom: 1rem;
+}
+
+.empty-state p {
+    color: var(--text-muted);
+    margin-bottom: 1.5rem;
+}
+
+#addressForm input,
+#addressForm textarea {
+    background-color: #f8f9fa; 
+    color: black;
+}
+
+/* Address Card Delete Button Animation */
+.btn-outline-danger {
+    transition: all 0.3s ease;
+}
+
+.btn-outline-danger:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 10px rgba(220, 53, 69, 0.3);
+}
+
+.address-card {
+    transition: all 0.3s ease;
+}
+
+.address-card.deleting {
+    transform: scale(0.95);
+    opacity: 0.7;
+}
+
+/* SweetAlert2 Custom Styles */
+.swal2-popup {
+    border-radius: 15px;
+}
+
+.swal2-title {
+    color: var(--text-color) !important;
+}
+
+.swal2-html-container {
+    color: var(--text-color) !important;
+}
+
+.swal2-confirm {
+    background-color: var(--danger-color) !important;
+    border-radius: 8px !important;
+}
+
+.swal2-cancel {
+    background-color: var(--secondary-color) !important;
+    border-radius: 8px !important;
+}
+
+.swal2-popup {
+    background-color: white !important;
+}
+.swal2-title, .swal2-html-container {
+    color: #000 !important;
+}
+.swal2-confirm {
+    background-color: #3085d6 !important;
+}
+.swal2-cancel {
+    background-color: #d33 !important;
+}
+.swal2-confirm, .swal2-cancel {
+    color: white !important;
+    padding: 8px 16px !important;
+    border-radius: 4px !important;
+    border: none !important;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 991px) {
+    .profile-sidebar {
+        margin-bottom: 2rem;
+    }
+    
+    .profile-nav {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .profile-nav .nav-item {
+        flex: 1 1 calc(50% - 0.5rem);
+    }
+}
+
+@media (max-width: 576px) {
+    .profile-nav .nav-item {
+        flex: 1 1 100%;
+    }
+    
+    .stat-card {
+        padding: 1rem;
+    }
+    
+    .order-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+}

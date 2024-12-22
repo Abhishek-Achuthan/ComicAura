@@ -1,0 +1,100 @@
+<%- include('../partials/header') %>
+
+<div class="container my-5">
+    <div class="text-center mb-4">
+        <i class="fas fa-check-circle text-success" style="font-size: 4rem;"></i>
+        <h2 class="mt-3">Order Placed Successfully!</h2>
+        <p class="text-muted">Thank you for shopping with ComicAura</p>
+    </div>
+
+    <div class="order-details card">
+        <div class="card-body">
+            <h4 class="card-title mb-4">Order Details</h4>
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Order ID:</strong> <%= order._id %></p>
+                    <p><strong>Order Date:</strong> <%= new Date(order.orderDate).toLocaleDateString() %></p>
+                    <p><strong>Payment Method:</strong> <%= order.paymentMethod %></p>
+                    <p><strong>Order Status:</strong> <span class="badge bg-primary"><%= order.orderStatus %></span></p>
+                </div>
+                <div class="col-md-6">
+                    <h5>Shipping Address</h5>
+                    <p>
+                        <%= order.shippingAddress.name %><br>
+                        <%= order.shippingAddress.street %><br>
+                        <%= order.shippingAddress.city %>, <%= order.shippingAddress.state %> <%= order.shippingAddress.pinCode %><br>
+                        Phone: <%= order.shippingAddress.phoneNumber %>
+                    </p>
+                </div>
+            </div>
+
+            <div class="table-responsive mt-4">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Quantity</th>
+                            <th class="text-end">Price</th>
+                            <th class="text-end">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% order.products.forEach(item => { %>
+                            <tr>
+                                <td><%= item.productId.name %></td>
+                                <td><%= item.quantity %></td>
+                                <td class="text-end">₹<%= item.price %></td>
+                                <td class="text-end">₹<%= item.price * item.quantity %></td>
+                            </tr>
+                        <% }); %>
+                        <tr>
+                            <td colspan="3" class="text-end"><strong>Subtotal</strong></td>
+                            <td class="text-end">₹<%= order.subTotal %></td>
+                        </tr>
+                        <tr>
+                            <td colspan="3" class="text-end"><strong>Tax (5%)</strong></td>
+                            <td class="text-end">₹<%= order.taxAmount %></td>
+                        </tr>
+                        <tr>
+                            <td colspan="3" class="text-end"><strong>Total Amount</strong></td>
+                            <td class="text-end"><strong>₹<%= order.totalAmount %></strong></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="text-center mt-4">
+        <a href="/shop" class="btn btn-primary me-2">
+            <i class="fas fa-shopping-bag me-2"></i>Continue Shopping
+        </a>
+        <a href="/order-history" class="btn btn-outline-primary">
+            <i class="fas fa-history me-2"></i>View Order History
+        </a>
+    </div>
+</div>
+
+<style>
+.order-details {
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+}
+
+.badge {
+    padding: 0.5em 1em;
+    font-size: 0.875em;
+}
+
+.table th {
+    background-color: #f8f9fa;
+}
+
+.table td, .table th {
+    padding: 1rem;
+    vertical-align: middle;
+}
+</style>
+
+<%- include('../partials/footer') %>

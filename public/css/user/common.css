@@ -1,0 +1,120 @@
+:root {
+    --primary-color: #FF6B00;
+    --secondary-color: #FFA559;
+    --background-dark: #1A1A1A;
+    --background-light: #2A2A2A;
+    --text-color: #FFFFFF;
+}
+
+/* Common styles for all pages */
+body {
+    background-color: #f8f9fa;
+    font-family: 'Nunito', sans-serif;
+    color: #2c3e50;
+    padding-top: 76px; /* For fixed header */
+}
+
+/* Common components */
+.page-title {
+    color: #2c3e50;
+    font-weight: 700;
+    margin-bottom: 2rem;
+    font-size: 2rem;
+    border-bottom: 3px solid #3498db;
+    padding-bottom: 0.5rem;
+    display: inline-block;
+}
+
+.section-title {
+    color: #2c3e50;
+    font-weight: 600;
+    margin-bottom: 1.2rem;
+    font-size: 1.2rem;
+}
+
+/* Common buttons */
+.primary-btn {
+    background-color: #3498db;
+    color: #fff;
+    padding: 0.8rem 2rem;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.primary-btn:hover {
+    background-color: #2980b9;
+    transform: translateY(-2px);
+    color: #fff;
+}
+
+/* Common cards */
+.custom-card {
+    background-color: #ffffff;
+    border-radius: 15px;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.custom-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.12);
+}
+
+/* Common status badges */
+.status-badge {
+    padding: 0.5rem 1.2rem;
+    border-radius: 50px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    display: inline-block;
+}
+
+.status-pending { 
+    background-color: #fff3cd; 
+    color: #856404;
+}
+.status-processing { 
+    background-color: #cce5ff; 
+    color: #004085;
+}
+.status-shipped { 
+    background-color: #e8e4ff; 
+    color: #4527a0;
+}
+.status-delivered { 
+    background-color: #d4edda; 
+    color: #155724;
+}
+.status-cancelled { 
+    background-color: #f8d7da; 
+    color: #721c24;
+}
+
+/* Common empty state */
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: #fff;
+    border-radius: 15px;
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
+}
+
+.empty-state i {
+    color: #6c757d;
+    margin-bottom: 1.5rem;
+}
+
+.empty-state h3 {
+    color: #2c3e50;
+    margin-bottom: 1rem;
+}
+
+.empty-state p {
+    color: #6c757d;
+    margin-bottom: 1.5rem;
+}

@@ -1,0 +1,336 @@
+<%- include('../partials/header') %>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+<link rel="stylesheet" href="/css/user/shop.css">
+
+<header class="shop-page-header">
+    <div class="container">
+        <h1 class="shop-page-title text-center mb-4">Comic Shop</h1>
+        <div class="shop-search-container">
+            <input type="text" id="searchInput" class="shop-search-input" placeholder="Search for mangas anime figurines...">
+            <button id="searchBtn" class="shop-search-btn">
+                <i class="fas fa-search"></i>
+            </button>
+        </div>
+    </div>
+</header>
+
+<div class="shop-wrapper">
+    <div class="container">
+        <div class="shop-container">
+            <aside class="filter-panel">
+                <div class="filter-section">
+                    <h3 class="filter-title">Sort By</h3>
+                    <select id="sortSelect" class="filter-select">
+                        <option value="featured">Featured</option>
+                        <option value="popularity">Popularity</option>
+                        <option value="price-low">Price: Low to High</option>
+                        <option value="price-high">Price: High to Low</option>
+                        <option value="rating">Average Rating</option>
+                        <option value="newest">New Arrivals</option>
+                        <option value="name-asc">Name: A to Z</option>
+                        <option value="name-desc">Name: Z to A</option>
+                    </select>
+                </div>
+
+                <div class="filter-section">
+                    <h3 class="filter-title">Categories</h3>
+                    <select id="categorySelect" class="filter-select">
+                        <option value="all">All Categories</option>
+                        <% categories.forEach(category => { %>
+                            <option value="<%= category._id %>"><%= category.name %></option>
+                        <% }); %>
+                    </select>
+                </div>
+
+                <div class="filter-section">
+                    <h3 class="filter-title">Rating</h3>
+                    <select id="ratingSelect" class="filter-select">
+                        <option value="all">All Ratings</option>
+                        <option value="5">5 Stars</option>
+                        <option value="4">4+ Stars</option>
+                        <option value="3">3+ Stars</option>
+                        <option value="2">2+ Stars</option>
+                        <option value="1">1+ Star</option>
+                    </select>
+                </div>
+
+                <div class="filter-section">
+                    <h3 class="filter-title">Price Range</h3>
+                    <div class="price-range">
+                        <input type="number" id="minPrice" class="form-control" placeholder="Min" min="0">
+                        <span class="price-separator">to</span>
+                        <input type="number" id="maxPrice" class="form-control" placeholder="Max" min="0">
+                    </div>
+                    <div id="priceError" class="text-danger mt-2" style="display: none;"></div>
+                    <button id="applyPriceFilter" class="btn btn-primary btn-sm mt-2 w-100">Apply</button>
+                </div>
+            </aside>
+
+            <div class="main-content">
+                <div class="products-container">
+                    <div class="products-grid" id="productsGrid">
+                        <% if (products && products.length > 0) { %>
+                            <% products.forEach(product => { %>
+                                <div class="product-card animate__animated animate__fadeIn">
+                                    <a href="/product/<%= product._id %>" class="product-link">
+                                        <div class="product-image">
+                                            <img src="<%= product.images && product.images[0] ? product.images[0] : '/images/placeholder.jpg' %>" alt="<%= product.name %>">
+                                        </div>
+                                        <div class="product-details">
+                                            <h3 class="product-title"><%= product.name %></h3>
+                                            <div class="product-rating">
+                                                <div class="rating-stars">
+                                                    <% for(let i = 0; i < 5; i++) { %>
+                                                        <i class="fas fa-star <%= i < (product.averageRating || 0) ? 'filled' : '' %>"></i>
+                                                    <% } %>
+                                                </div>
+                                                <span class="rating-count">(<%= product.ratings ? product.ratings.length : 0 %>)</span>
+                                            </div>
+                                            <div class="product-price">₹<%= (product.salePrice || product.regularPrice).toFixed(2) %></div>
+                                        </div>
+                                    </a>
+                                    <% if (product.inCart) { %>
+                                        <button 
+                                            class="add-to-cart-btn in-cart" 
+                                            onclick="window.location.href='/cart'"
+                                            data-product-id="<%= product._id %>"
+                                        >
+                                            <i class="fas fa-shopping-cart"></i> Go to Cart
+                                        </button>
+                                    <% } else { %>
+                                        <button 
+                                            class="add-to-cart-btn" 
+                                            onclick="addToCart('<%= product._id %>', this)"
+                                            data-product-id="<%= product._id %>"
+                                        >
+                                            <i class="fas fa-cart-plus"></i> Add to Cart
+                                        </button>
+                                    <% } %>
+                                </div>
+                            <% }); %>
+                        <% } else { %>
+                            <div class="no-products">
+                                <h3>No products found</h3>
+                                <p>Try adjusting your filters or search criteria</p>
+                            </div>
+                        <% } %>
+                    </div>
+
+                    <div id="shopPagination" class="pagination-container"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="/js/user/pagination.js"></script>
+<script src="/js/user/cart.js"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('searchInput');
+        const searchBtn = document.getElementById('searchBtn');
+        const sortSelect = document.getElementById('sortSelect');
+        const categorySelect = document.getElementById('categorySelect');
+        const productsGrid = document.getElementById('productsGrid');
+        const minPriceInput = document.getElementById('minPrice');
+        const maxPriceInput = document.getElementById('maxPrice');
+        const applyPriceFilterBtn = document.getElementById('applyPriceFilter');
+        const ratingSelect = document.getElementById('ratingSelect');
+        
+        let currentFilters = {
+            search: '',
+            category: 'all',
+            sort: 'featured',
+            rating: 'all',
+            minPrice: '',
+            maxPrice: ''
+        };
+
+        function validatePriceRange() {
+            const minPrice = parseFloat(minPriceInput.value);
+            const maxPrice = parseFloat(maxPriceInput.value);
+            
+            if (minPrice && maxPrice && minPrice > maxPrice) {
+                priceError.textContent = 'Minimum price cannot be greater than maximum price';
+                priceError.style.display = 'block';
+                return false;
+            }
+            
+            if (minPrice < 0 || maxPrice < 0) {
+                priceError.textContent = 'Price cannot be negative';
+                priceError.style.display = 'block';
+                return false;
+            }
+            
+            priceError.style.display = 'none';
+            return true;
+        }
+
+        categorySelect.addEventListener('change', function() {
+            currentFilters.category = this.value;
+            fetchProducts();
+        });
+
+        minPriceInput.addEventListener('input', validatePriceRange);
+        maxPriceInput.addEventListener('input', validatePriceRange);
+
+        applyPriceFilterBtn.addEventListener('click', function() {
+            if (validatePriceRange()) {
+                currentFilters.minPrice = minPriceInput.value;
+                currentFilters.maxPrice = maxPriceInput.value;
+                fetchProducts();
+            }
+        });
+
+        searchInput.addEventListener('input', debounce(function() {
+            currentFilters.search = this.value;
+            fetchProducts();
+        }, 300));
+
+        searchBtn.addEventListener('click', function() {
+            currentFilters.search = searchInput.value;
+            fetchProducts();
+        });
+
+        sortSelect.addEventListener('change', function() {
+            currentFilters.sort = this.value;
+            fetchProducts();
+        });
+
+        ratingSelect.addEventListener('change', function() {
+            currentFilters.rating = this.value;
+            fetchProducts();
+        });
+
+        fetchProducts();
+
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        async function fetchProducts() {
+            try {
+                const queryParams = new URLSearchParams();
+                
+                if (currentFilters.search) {
+                    queryParams.append('search', currentFilters.search);
+                }
+                
+                if (currentFilters.category !== 'all') {
+                    queryParams.append('category', currentFilters.category);
+                }
+                
+                if (currentFilters.sort !== 'featured') {
+                    queryParams.append('sort', currentFilters.sort);
+                }
+                
+                if (currentFilters.rating !== 'all') {
+                    queryParams.append('rating', currentFilters.rating);
+                }
+                
+                if (currentFilters.minPrice) {
+                    queryParams.append('minPrice', currentFilters.minPrice);
+                }
+                
+                if (currentFilters.maxPrice) {
+                    queryParams.append('maxPrice', currentFilters.maxPrice);
+                }
+
+                console.log('Fetching products with params:', queryParams.toString());
+                const response = await fetch(`/shop/filter?${queryParams.toString()}`);
+                const data = await response.json();
+                console.log('Received data:', data);
+
+                if (data.success) {
+                    console.log('Rendering products:', data.products);
+                    renderProducts(data.products);
+                    initializeShopPagination(data.products);
+                } else {
+                    console.error('Failed to fetch products:', data.message);
+                }
+            } catch (error) {
+                console.error('Error fetching products:', error);
+            }
+        }
+
+        function renderProducts(products) {
+            productsGrid.innerHTML = products.map(product => `
+                <div class="product-card animate__animated animate__fadeIn">
+                    <a href="/product/${product._id}" class="product-link">
+                        <div class="product-image">
+                            <img src="${product.images[0]}" alt="${product.name}">
+                        </div>
+                        <div class="product-info">
+                            <h3 class="product-title">${product.name}</h3>
+                            <div class="product-meta">
+                                <div class="product-category">${product.category ? product.category.name : 'Uncategorized'}</div>
+                                <div class="product-price">₹${(product.salePrice || product.regularPrice).toFixed(2)}</div>
+                            </div>
+                        </div>
+                    </a>
+                    <button 
+                        class="add-to-cart-btn ${product.inCart ? 'in-cart' : ''}" 
+                        onclick="${product.inCart ? 'window.location.href=\'/cart\'' : `addToCart('${product._id}', this)`}" 
+                        data-product-id="${product._id}"
+                    >
+                        <i class="fas fa-${product.inCart ? 'shopping-cart' : 'cart-plus'}"></i>
+                        ${product.inCart ? 'Go to Cart' : 'Add to Cart'}
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        // Function to add product to cart
+        async function addToCart(productId, button) {
+            try {
+                const response = await fetch('/cart/add', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ productId, quantity: 1 })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Show success message
+                    const toast = document.createElement('div');
+                    toast.className = 'toast animate__animated animate__fadeIn';
+                    toast.textContent = 'Product added to cart!';
+                    document.body.appendChild(toast);
+
+                    // Remove toast after 3 seconds
+                    setTimeout(() => {
+                        toast.classList.remove('animate__fadeIn');
+                        toast.classList.add('animate__fadeOut');
+                        setTimeout(() => toast.remove(), 1000);
+                    }, 3000);
+                } else {
+                    console.error('Failed to add to cart:', data.message);
+                }
+            } catch (error) {
+                console.error('Error adding to cart:', error);
+            }
+        }
+
+        // Initialize pagination with initial data
+        function initializeShopPagination(products) {
+            if (products && products.length > 0) {
+                initializePagination(products.length, 12, 'productsGrid', 'shopPagination');
+            }
+        }
+    });
+</script>
+
+<%- include('../partials/footer') %>

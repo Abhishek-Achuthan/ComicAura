@@ -1,111 +1,66 @@
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize thumbnail gallery first
     const galleryThumbs = new Swiper('.gallery-thumbs', {
         spaceBetween: 10,
         slidesPerView: 4,
         freeMode: true,
-        watchSlidesVisibility: true,
         watchSlidesProgress: true,
+        watchSlidesVisibility: true
     });
 
+    // Initialize main gallery
     const galleryMain = new Swiper('.gallery-main', {
         spaceBetween: 10,
+        slidesPerView: 1,
         navigation: {
             nextEl: '.swiper-button-next',
             prevEl: '.swiper-button-prev',
         },
         thumbs: {
             swiper: galleryThumbs
-        },
-        effect: 'fade',
-        fadeEffect: {
-            crossFade: true
         }
     });
 
-    // Initialize Swiper for suggested products
-    const suggestedProductsSlider = new Swiper('.suggested-products-slider', {
-        slidesPerView: 1,
-        spaceBetween: 20,
-        pagination: {
-            el: '.swiper-pagination',
-            clickable: true,
-        },
-        breakpoints: {
-            640: {
-                slidesPerView: 2,
-            },
-            768: {
-                slidesPerView: 3,
-            },
-            1024: {
-                slidesPerView: 4,
-            },
-        },
-        autoplay: {
-            delay: 3000,
-            disableOnInteraction: false,
-        },
-        loop: true,
-        effect: 'coverflow',
-        coverflowEffect: {
-            rotate: 50,
-            stretch: 0,
-            depth: 100,
-            modifier: 1,
-            slideShadows: true,
-        },
+    // Zoom functionality
+    const zoomContainers = document.querySelectorAll('.zoom-container');
+    zoomContainers.forEach(container => {
+        const img = container.querySelector('.zoom-image');
+        
+        container.addEventListener('mousemove', (e) => {
+            const { left, top, width, height } = container.getBoundingClientRect();
+            const x = (e.clientX - left) / width * 100;
+            const y = (e.clientY - top) / height * 100;
+            
+            img.style.transformOrigin = `${x}% ${y}%`;
+        });
+        
+        container.addEventListener('mouseenter', () => {
+            img.style.transform = 'scale(2)';
+        });
+        
+        container.addEventListener('mouseleave', () => {
+            img.style.transform = 'scale(1)';
+        });
     });
 
-    // Quantity selector
     const quantityInput = document.getElementById('quantity');
     const decreaseBtn = document.getElementById('decreaseQuantity');
     const increaseBtn = document.getElementById('increaseQuantity');
 
-    decreaseBtn.addEventListener('click', () => {
-        if (quantityInput.value > 1) {
-            quantityInput.value = parseInt(quantityInput.value) - 1;
-        }
-    });
-
-    increaseBtn.addEventListener('click', () => {
-        quantityInput.value = parseInt(quantityInput.value) + 1;
-    });
-        
-
-    // Enhance search bar functionality
-    const searchForm = document.querySelector('.search-form');
-    const searchInput = document.querySelector('.search-input');
-
-    searchForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        alert(`Searching for: ${searchInput.value}`);
-        // Implement actual search functionality here
-    });
-
-    searchInput.addEventListener('focus', () => {
-        searchForm.classList.add('active');
-    });
-
-    searchInput.addEventListener('blur', () => {
-        searchForm.classList.remove('active');
-    });
-
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-        anchor.addEventListener('click', function (e) {
-            e.preventDefault();
-            document.querySelector(this.getAttribute('href')).scrollIntoView({
-                behavior: 'smooth'
-            });
+    if (decreaseBtn && increaseBtn && quantityInput) {
+        decreaseBtn.addEventListener('click', () => {
+            const currentValue = parseInt(quantityInput.value);
+            if (currentValue > 1) {
+                quantityInput.value = currentValue - 1;
+            }
         });
-    });
 
-    const productTitle = document.querySelector('.product-title');
-    productTitle.style.opacity = '0';
-    productTitle.style.transform = 'translateY(-20px)';
-    setTimeout(() => {
-        productTitle.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
-        productTitle.style.opacity = '1';
-        productTitle.style.transform = 'translateY(0)';
-    }, 200);
+        increaseBtn.addEventListener('click', () => {
+            const currentValue = parseInt(quantityInput.value);
+            const maxValue = parseInt(quantityInput.getAttribute('max'));
+            if (currentValue < maxValue) {
+                quantityInput.value = currentValue + 1;
+            }
+        });
+    }
 });
-

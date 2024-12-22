@@ -98,16 +98,17 @@
                                     <div class="input-group">
                                         <span class="input-group-text">₹</span>
                                         <input type="number" class="form-control" id="regularPrice" name="regularPrice" 
-                                               min="0" step="0.01" required>
+                                               min="0" step="0.01" required onchange="validatePrices()">
+                                        <div class="invalid-feedback">Please enter a valid regular price.</div>
                                     </div>
-                                    <div class="invalid-feedback">Please enter a valid price.</div>
                                 </div>
                                 <div class="col-md-6">
-                                    <label for="salePrice" class="form-label">Sale Price (Optional)</label>
+                                    <label for="salePrice" class="form-label">Sale Price</label>
                                     <div class="input-group">
                                         <span class="input-group-text">₹</span>
                                         <input type="number" class="form-control" id="salePrice" name="salePrice" 
-                                               min="0" step="0.01">
+                                               min="0" step="0.01" required onchange="validatePrices()">
+                                        <div class="invalid-feedback">Sale price must be less than regular price.</div>
                                     </div>
                                 </div>
                             </div>
@@ -192,17 +193,75 @@
         document.addEventListener('DOMContentLoaded', function() {
             const form = document.getElementById('addProductForm');
             const inputs = form.querySelectorAll('input, select, textarea');
+            const maxFileSize = 5 * 1024 * 1024; // 5MB
             
-            inputs.forEach(input => {
-                input.addEventListener('invalid', function(e) {
-                    e.preventDefault();
-                });
+            // Validate file input
+            document.getElementById('images').addEventListener('change', function(e) {
+                const files = Array.from(e.target.files);
+                let isValid = true;
+                const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
                 
-                input.addEventListener('keypress', function(e) {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
+                files.forEach(file => {
+                    if (!allowedTypes.includes(file.type)) {
+                        isValid = false;
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Invalid File Type',
+                            text: 'Please upload only image files (JPEG, PNG, GIF, WEBP)'
+                        });
+                        e.target.value = '';
+                        return;
+                    }
+                    
+                    if (file.size > maxFileSize) {
+                        isValid = false;
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'File Too Large',
+                            text: 'Each image must be less than 5MB'
+                        });
+                        e.target.value = '';
+                        return;
                     }
                 });
+                
+                if (isValid) {
+                    updateImagePreview();
+                }
+            });
+
+            // Price validation function
+            window.validatePrices = function() {
+                const regularPrice = parseFloat(document.getElementById('regularPrice').value);
+                const salePrice = parseFloat(document.getElementById('salePrice').value);
+                const salePriceInput = document.getElementById('salePrice');
+                
+                if (salePrice >= regularPrice) {
+                    salePriceInput.setCustomValidity('Sale price must be less than regular price');
+                    salePriceInput.classList.add('is-invalid');
+                } else {
+                    salePriceInput.setCustomValidity('');
+                    salePriceInput.classList.remove('is-invalid');
+                }
+            };
+            
+            // Form validation
+            form.addEventListener('submit', function(event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                
+                const regularPrice = parseFloat(document.getElementById('regularPrice').value);
+                const salePrice = parseFloat(document.getElementById('salePrice').value);
+                
+                if (salePrice >= regularPrice) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    document.getElementById('salePrice').classList.add('is-invalid');
+                }
+                
+                form.classList.add('was-validated');
             });
 
             const imageInput = document.getElementById('images');

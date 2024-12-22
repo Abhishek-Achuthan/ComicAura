@@ -1,0 +1,136 @@
+<%- include('../partials/header') %>
+
+<div class="container mt-4">
+    <h2>Order History</h2>
+
+    <% if (error !== null) { %>
+        <div class="alert alert-danger"><%= error %></div>
+    <% } %>
+
+    <% if (!orders || orders.length === 0) { %>
+        <div class="text-center mt-4">
+            <p>No orders found</p>
+            <a href="/shop" class="btn btn-primary">Continue Shopping</a>
+        </div>
+    <% } else { %>
+        <div class="row mt-3">
+            <% orders.forEach(order => { %>
+                <div class="col-12 mb-3">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>Ord'er #<%= order._id %></strong><br>
+                                    <small><%= new Date(order.orderDate).toLocaleDateString() %></small>
+                                </div>
+                                <div>
+                                    <span class="badge bg-<%= order.orderStatus === 'Delivered' ? 'success' : order.orderStatus === 'Cancelled' ? 'danger' : 'primary' %>">
+                                        <%= order.orderStatus %>
+                                    </span>
+                                    <% if (order.orderStatus !== 'Delivered' && order.orderStatus !== 'Cancelled') { %>
+                                        <button class="btn btn-sm btn-danger ms-2" onclick="cancelOrder('<%= order._id %>')">Cancel</button>
+                                    <% } %>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <table class="table">
+                                        <thead>
+                                            <tr>
+                                                <th>Product</th>
+                                                <th>Quantity</th>
+                                                <th>Price</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <% order.products.forEach(item => { %>
+                                                <tr>
+                                                    <td><%= item.productId.name %></td>
+                                                    <td><%= item.quantity %></td>
+                                                    <td>₹<%= item.price %></td>
+                                                </tr>
+                                            <% }); %>
+                                        </tbody>
+                                        <tfoot>
+                                            <tr>
+                                                <td colspan="2" class="text-end"><strong>Total:</strong></td>
+                                                <td><strong>₹<%= order.totalAmount %></strong></td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                                <div class="col-md-4">
+                                    <h6>Shipping Address</h6>
+                                    <p>
+                                        <% if (order.shippingAddress) { %>
+                                            <%= order.shippingAddress.name %><br>
+                                            <%= order.shippingAddress.street %><br>
+                                            <%= order.shippingAddress.city %>, 
+                                            <%= order.shippingAddress.state %> 
+                                            <%= order.shippingAddress.pinCode %><br>
+                                            <%= order.shippingAddress.country %><br>
+                                            Phone: <%= order.shippingAddress.phoneNumber %><br>
+                                            Type: <%= order.shippingAddress.addressType %>
+                                        <% } else { %>
+                                            Address not available
+                                        <% } %>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            <% }); %>
+        </div>
+
+        <% if (totalPages > 1) { %>
+            <nav aria-label="Order history pagination" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    <% if (currentPage > 1) { %>
+                        <li class="page-item">
+                            <a class="page-link" href="/order-history?page=<%= currentPage - 1 %>">Previous</a>
+                        </li>
+                    <% } %>
+
+                    <% for(let i = 1; i <= totalPages; i++) { %>
+                        <li class="page-item <%= currentPage === i ? 'active' : '' %>">
+                            <a class="page-link" href="/order-history?page=<%= i %>"><%= i %></a>
+                        </li>
+                    <% } %>
+
+                    <% if (currentPage < totalPages) { %>
+                        <li class="page-item">
+                            <a class="page-link" href="/order-history?page=<%= currentPage + 1 %>">Next</a>
+                        </li>
+                    <% } %>
+                </ul>
+            </nav>
+        <% } %>
+    <% } %>
+</div>
+
+<script>
+async function cancelOrder(orderId) {
+    if (!confirm('Are you sure you want to cancel this order?')) return;
+    
+    try {
+        const response = await fetch(`/cancel-order/${orderId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            location.reload();
+        } else {
+            alert(data.message || 'Failed to cancel order');
+        }
+    } catch (error) {
+        alert('Error cancelling order');
+    }
+}
+</script>
+
+<%- include('../partials/footer') %>

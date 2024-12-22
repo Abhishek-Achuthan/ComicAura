@@ -1,0 +1,191 @@
+    <!-- Footer -->
+<footer class="py-5">
+    <div class="container">
+        <div class="row g-4">
+            <div class="col-lg-3 col-md-6">
+                <h3 class="footer-title">ComicAura</h3>
+                <p>Your ultimate destination for premium anime merchandise.</p>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <h4 class="footer-title">Quick Links</h4>
+                <ul class="footer-links">
+                    <li><a href="/">Home</a></li>
+                    <li><a href="/shop">Shop</a></li>
+                    <li><a href="/categories">Categories</a></li>
+                    <li><a href="/about">About Us</a></li>
+                    <li><a href="/contact">Contact</a></li>
+                </ul>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <h4 class="footer-title">Customer Service</h4>
+                <ul class="footer-links">
+                    <li><a href="/faq">FAQ</a></li>
+                    <li><a href="/shipping">Shipping & Returns</a></li>
+                    <li><a href="/terms">Terms & Conditions</a></li>
+                    <li><a href="/privacy">Privacy Policy</a></li>
+                </ul>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <h4 class="footer-title">Contact Us</h4>
+                <p>1234 Anime Street</p>
+                <p>Tokyo, Japan 123456</p>
+                <p>Phone: +1 (123) 456-7890</p>
+                <p>Email: info@comicaura.com</p>
+            </div>
+        </div>
+        <div class="text-center mt-4 pt-4 border-top border-secondary">
+            <p>&copy; 2023 ComicAura. All rights reserved.</p>
+        </div>
+    </div>
+</footer>
+
+<!-- Bootstrap Bundle JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+<!-- jQuery (if needed) -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<!-- Owl Carousel JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/owl.carousel.min.js"></script>
+
+<!-- Common JS -->
+<script>
+    // Header functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        // Navbar scroll effect
+        const navbar = document.querySelector('.navbar');
+        if (navbar) {
+            window.addEventListener('scroll', function() {
+                if (window.scrollY > 50) {
+                    navbar.classList.add('scrolled');
+                } else {
+                    navbar.classList.remove('scrolled');
+                }
+            });
+        }
+
+        // User dropdown functionality
+        const userDropdownBtn = document.getElementById('userDropdownBtn');
+        const userDropdownContent = document.getElementById('userDropdownContent');
+
+        if (userDropdownBtn && userDropdownContent) {
+            userDropdownBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                userDropdownContent.classList.toggle('show');
+            });
+
+            document.addEventListener('click', function(e) {
+                if (!userDropdownBtn.contains(e.target) && !userDropdownContent.contains(e.target)) {
+                    userDropdownContent.classList.remove('show');
+                }
+            });
+
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && userDropdownContent.classList.contains('show')) {
+                    userDropdownContent.classList.remove('show');
+                }
+            });
+        }
+
+        const searchInput = document.querySelector('.search-input');
+        const searchIcon = document.querySelector('.search-icon');
+    });
+
+    function updateCartButton(button) {
+        button.innerHTML = '<i class="fas fa-shopping-cart"></i> Go to Cart';
+        button.classList.add('in-cart');
+        button.removeAttribute('onclick');
+        button.addEventListener('click', () => window.location.href = '/cart');
+    }
+
+    async function addToCart(productId, button) {
+        try {
+            const response = await fetch('/addToCart', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    productId: productId,
+                    quantity: 1
+                })
+            });
+
+            if (response.status === 401) {
+                window.location.href = '/login';
+                return;
+            }
+
+            const data = await response.json();
+            
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: data.success ? 'success' : 'error',
+                title: data.toast?.message || (data.success ? 'Added to Cart' : 'Failed to add to cart'),
+                showConfirmButton: false,
+                timer: 3000
+            });
+
+            if (data.success) {
+                const cartCountElement = document.querySelector('.cart-count');
+                if (cartCountElement && data.cartCount) {
+                    cartCountElement.textContent = data.cartCount;
+                }
+
+                const buttons = document.querySelectorAll(`button[data-product-id="${productId}"]`);
+                buttons.forEach(updateCartButton);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'error',
+                title: 'Something went wrong',
+                showConfirmButton: false,
+                timer: 3000
+            });
+        }
+    }
+</script>
+
+<style>
+    .colored-toast.swal2-icon-success {
+        background: #4CAF50 !important;
+    }
+    
+    .colored-toast.swal2-icon-error {
+        background: #f44336 !important;
+    }
+    
+    .colored-toast .swal2-title {
+        color: white;
+        font-size: 14px;
+        font-weight: 500;
+    }
+    
+    .colored-toast .swal2-close {
+        color: white;
+    }
+    
+    .colored-toast .swal2-html-container {
+        color: white;
+    }
+
+    .colored-toast .swal2-icon {
+        margin: 5px;
+    }
+
+    .colored-toast {
+        padding: 10px 15px;
+    }
+</style>
+    
+<!-- Page Specific JS -->
+<% if (typeof pageJs !== 'undefined') { %>
+<script src="/js/user/<%= pageJs %>.js"></script>
+<% } %>
+
+</body>
+</html>

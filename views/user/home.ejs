@@ -1,78 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ComicAura - Premium Anime Merchandise</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/assets/owl.carousel.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/assets/owl.theme.default.min.css">
-    <link rel="stylesheet" href="/css/user/home.css">
-</head>
-<body>
-    <!-- Header -->
-    <nav class="navbar navbar-expand-lg fixed-top">
-        <div class="container">
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <a class="navbar-brand" href="#">ComicAura</a>
-            
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                    <li class="nav-item">
-                        <a class="nav-link" href="/home">Home</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/home">Shop</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/home">Categories</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/home">About</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/home">Contact</a>
-                    </li>
-                </ul>
-            </div>
-
-            <div class="d-flex align-items-center">
-                <div class="search-wrapper me-3 d-none d-lg-block">
-                    <i class="bi bi-search search-icon"></i>
-                    <input type="search" class="form-control search-input" placeholder="Search...">
-                </div>
-                <div class="user-dropdown">
-                    <% if (user) { %>
-                        <span class="me-2" style="color: var(--primary-color); font-weight: 500;"><%= user.firstName %></span>
-                    <% } %>
-                    <a class="icon-btn" id="userDropdownBtn">
-                        <i class="bi bi-person-circle"></i>
-                    </a>
-                    <div class="user-dropdown-content" id="userDropdownContent">
-                        <% if (user) { %>
-                            <a href="/profile"><i class="bi bi-person"></i>Profile</a>
-                            <a href="/orders"><i class="bi bi-box-seam"></i>My Orders</a>
-                            <a href="/wishlist"><i class="bi bi-heart"></i>Wishlist</a>
-                            <div class="user-dropdown-divider"></div>
-                            <a href="/logout"><i class="bi bi-box-arrow-right"></i>Logout</a>
-                        <% } else { %>
-                            <a href="/login"><i class="bi bi-box-arrow-in-right"></i>Login</a>
-                            <a href="/signup"><i class="bi bi-person-plus"></i>Sign Up</a>
-                        <% } %>
-                    </div>
-                </div>
-                <a href="/cart" class="icon-btn">
-                    <i class="bi bi-cart3"></i>
-                    <span class="cart-count">0</span>
-                </a>
-            </div>
-        </div>
-    </nav>
-
-    <!-- Hero Section -->
+<%- include('../partials/header') %>
     <section class="hero">
         <div class="container">
             <h1>Welcome to ComicAura</h1>
@@ -80,121 +6,8 @@
             <button class="btn btn-primary btn-lg">Explore Now</button>
         </div>
     </section>
-
-    <!-- Categories Section -->
-    <section class="py-5">
-        <div class="container">
-            <h2 class="text-center mb-4" style="color: var(--primary-color)">Shop by Category</h2>
-            <p class="text-center text-muted mb-5">Discover our premium collection of anime merchandise</p>
-            <div class="row g-4">
-                <div class="col-md-4">
-                    <div class="category-card">
-                        <img src="/uploads/demonslayer1.webp" alt="Anime Figures">
-                        <div class="category-overlay">
-                            <h3 class="category-title">Figures</h3>
-                            <p class="category-description">Premium quality anime character figures and collectibles</p>
-                            <a href="/category/figures" class="category-link">
-                                Explore Collection <i class="bi bi-arrow-right"></i>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="category-card">
-                        <img src="/uploads/one-piece-vol-103-9781974738700_hr.jpg" alt="Manga Collection">
-                        <div class="category-overlay">
-                            <h3 class="category-title">Manga</h3>
-                            <p class="category-description">Extensive collection of manga series and box sets</p>
-                            <a href="/category/manga" class="category-link">
-                                Browse Manga <i class="bi bi-arrow-right"></i>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="category-card">
-                        <img src="/uploads/GojoKeychain.webp" alt="Anime Accessories">
-                        <div class="category-overlay">
-                            <h3 class="category-title">Accessories</h3>
-                            <p class="category-description">Stylish accessories for anime enthusiasts</p>
-                            <a href="/category/accessories" class="category-link">
-                                View Accessories <i class="bi bi-arrow-right"></i>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Featured Products -->
-    <section class="py-5">
-        <div class="container">
-            <h2 class="text-center mb-4" style="color: var(--primary-color)">Featured Products</h2>
-            <div class="row g-4 justify-content-center"> 
-                <div class="col-md-6 col-lg-4"> 
-                    <a href="/product/1" class="text-decoration-none">
-                        <div class="product-card">
-                            <div class="product-image">
-                                <img src="/uploads/OnePiece image-1.webp" alt="Limited Edition Figure">
-                            </div>
-                            <div class="product-info">
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <h3 class="h5 product-title mb-0">Limited Edition Figure</h3>
-                                    <button class="btn btn-link text-danger p-0" onclick="event.preventDefault(); addToWishlist(1)">
-                                        <i class="bi bi-heart"></i>
-                                    </button>
-                                </div>
-                                <p class="mb-3">$129.99</p>
-                                <button class="btn btn-primary w-100" onclick="addToCart(1)">Add to Cart</button>
-                            </div>
-                        </div>
-                    </a>
-                </div>
-                <div class="col-md-6 col-lg-4"> 
-                    <a href="/product/2" class="text-decoration-none">
-                        <div class="product-card">
-                            <div class="product-image">
-                                <img src="/uploads/KyojuroRengokuPoster-DemonSlayer-1.webp" alt="Exclusive Anime Poster">
-                            </div>
-                            <div class="product-info">
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <h3 class="h5 product-title mb-0">Exclusive Anime Poster</h3>
-                                    <button class="btn btn-link text-danger p-0" onclick="event.preventDefault(); addToWishlist(2)">
-                                        <i class="bi bi-heart"></i>
-                                    </button>
-                                </div>
-                                <p class="mb-3">$24.99</p>
-                                <button class="btn btn-primary w-100" onclick="addToCart(2)">Add to Cart</button>
-                            </div>
-                        </div>
-                    </a>
-                </div>
-                <div class="col-md-6 col-lg-4"> 
-                    <a href="/product/4" class="text-decoration-none">
-                        <div class="product-card">
-                            <div class="product-image">
-                                <img src="/uploads/chainSawMan.webp" alt="Manga Box Set">
-                            </div>
-                            <div class="product-info">
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <h3 class="h5 product-title mb-0">Manga Box Set</h3>
-                                    <button class="btn btn-link text-danger p-0" onclick="event.preventDefault(); addToWishlist(4)">
-                                        <i class="bi bi-heart"></i>
-                                    </button>
-                                </div>
-                                <p class="mb-3">$89.99</p>
-                                <button class="btn btn-primary w-100" onclick="addToCart(4)">Add to Cart</button>
-                            </div>
-                        </div>
-                    </a>
-                </div>
-            </div>
-        </div>
-    </section>
     
 
-    <!-- New Arrivals -->
     <section class="new-arrivals py-5">
         <div class="container">
             <h2 class="text-center mb-2" style="color: var(--primary-color)">New Arrivals</h2>
@@ -203,15 +16,15 @@
                 <% if (newArrivals && newArrivals.length > 0) { %>
                     <% newArrivals.forEach(product => { %>
                         <div class="item">
-                            <a href="/product/<%= product._id %>" class="text-decoration-none">
-                                <div class="product-card">
+                            <div class="product-card">
+                                <a href="/product/<%= product._id %>" class="product-link">
                                     <div class="product-image">
                                         <img src="<%= product.images[0] %>" alt="<%= product.name %>">
                                         <button class="btn btn-link text-danger wishlist-btn" onclick="event.preventDefault(); addToWishlist('<%= product._id %>')">
                                             <i class="bi bi-heart"></i>
                                         </button>
                                     </div>
-                                    <div class="product-details">
+                                    <div class="product-info">
                                         <h3 class="product-title"><%= product.name %></h3>
                                         <div class="product-category"><%= product.category.name %></div>
                                         <div class="product-price">
@@ -222,13 +35,28 @@
                                                 <span class="current-price"><%= product.formattedRegularPrice %></span>
                                             <% } %>
                                         </div>
-                                        <button class="btn btn-primary w-100 add-to-cart" 
-                                                onclick="event.preventDefault(); addToCart('<%= product._id %>')">
-                                            <i class="bi bi-cart-plus"></i> Add to Cart
-                                        </button>
                                     </div>
+                                </a>
+                                <div class="product-actions">
+                                    <% if (product.inCart) { %>
+                                        <button 
+                                            class="add-to-cart-btn in-cart" 
+                                            onclick="window.location.href='/cart'"
+                                            data-product-id="<%= product._id %>"
+                                        >
+                                            <i class="fas fa-shopping-cart"></i> Go to Cart
+                                        </button>
+                                    <% } else { %>
+                                        <button 
+                                            class="add-to-cart-btn" 
+                                            onclick="addToCart('<%= product._id %>', this)"
+                                            data-product-id="<%= product._id %>"
+                                        >
+                                            <i class="fas fa-cart-plus"></i> Add to Cart
+                                        </button>
+                                    <% } %>
                                 </div>
-                            </a>
+                            </div>
                         </div>
                     <% }); %>
                 <% } else { %>
@@ -237,10 +65,12 @@
                     </div>
                 <% } %>
             </div>
+            <div class="text-center mt-4">
+                <a href="/shop" class="btn btn-outline-light">See More Products</a>
+            </div>
         </div>
     </section>
 
-    <!-- Testimonials -->
     <section class="py-5">
         <div class="container">
             <h2 class="text-center mb-4" style="color: var(--primary-color)">What Our Customers Say</h2>
@@ -288,7 +118,6 @@
         </div>
     </section>
 
-    <!-- Newsletter -->
     <section class="py-5 newsletter">
         <div class="container text-center">
             <h2 class="mb-4" style="color: var(--primary-color)">Stay Updated</h2>
@@ -304,65 +133,4 @@
         </div>
     </section>
 
-    <!-- Footer -->
-    <footer class="py-5">
-        <div class="container">
-            <div class="row g-4">
-                <div class="col-lg-3 col-md-6">
-                    <h3 class="footer-title">ComicAura</h3>
-                    <p>Your ultimate destination for premium anime merchandise.</p>
-                </div>
-                <div class="col-lg-3 col-md-6">
-                    <h4 class="footer-title">Quick Links</h4>
-                    <ul class="footer-links">
-                        <li><a href="#">Home</a></li>
-                        <li><a href="#">Shop</a></li>
-                        <li><a href="#">Categories</a></li>
-                        <li><a href="#">About Us</a></li>
-                        <li><a href="#">Contact</a></li>
-                    </ul>
-                </div>
-                <div class="col-lg-3 col-md-6">
-                    <h4 class="footer-title">Customer Service</h4>
-                    <ul class="footer-links">
-                        <li><a href="#">FAQ</a></li>
-                        <li><a href="#">Shipping & Returns</a></li>
-                        <li><a href="#">Terms & Conditions</a></li>
-                        <li><a href="#">Privacy Policy</a></li>
-                    </ul>
-                </div>
-                <div class="col-lg-3 col-md-6">
-                    <h4 class="footer-title">Contact Us</h4>
-                    <p>1234 Anime Street</p>
-                    <p>Tokyo, Japan 123456</p>
-                    <p>Phone: +1 (123) 456-7890</p>
-                    <p>Email: info@comicaura.com</p>
-                </div>
-            </div>
-            <div class="text-center mt-4 pt-4 border-top border-secondary">
-                <p>&copy; 2023 ComicAura. All rights reserved.</p>
-            </div>
-        </div>
-    </footer>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/owl.carousel.min.js"></script>
-    <script src="/js/user/home.js"></script>
-    <script>
-        const userDropdownBtn = document.getElementById('userDropdownBtn');
-        if (userDropdownBtn) {
-            userDropdownBtn.addEventListener('click', function(e) {
-                e.stopPropagation();
-                document.getElementById('userDropdownContent').classList.toggle('show');
-            });
-        }
-        document.addEventListener('click', function(e) {
-            const dropdown = document.getElementById('userDropdownContent');
-            if (dropdown && dropdown.classList.contains('show')) {
-                dropdown.classList.remove('show');
-            }
-        });
-    </script>
-</body>
-</html>
+    <%- include('../partials/footer', { pageJs: 'home' }) %>

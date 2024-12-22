@@ -13,7 +13,7 @@ const ProductSchema = new mongoose.Schema({
   },
   regularPrice: { 
     type: Number, 
-    required: true, 
+    required: true,  
     min: 0 
   },
   salePrice: { 
@@ -28,7 +28,7 @@ const ProductSchema = new mongoose.Schema({
   description: { 
     type: String, 
     trim: true 
-  },
+  },  
   images: { 
     type: [String], 
     required: true 
@@ -36,7 +36,7 @@ const ProductSchema = new mongoose.Schema({
   tags: { 
     type: [String] 
   },
-  status: { 
+  status: {   
     type: String, 
     enum: ['In Stock', 'Out of Stock', 'Pre-order'], 
     default: 'In Stock' 

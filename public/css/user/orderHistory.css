@@ -1,0 +1,231 @@
+/* Order History specific styles */
+.order-history-container {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+
+.page-title {
+    color: var(--primary-color);
+    margin-bottom: 2rem;
+    font-size: 2rem;
+    font-weight: 600;
+}
+
+.order-card {
+    background: var(--background-light);
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease;
+}
+
+.order-card:hover {
+    transform: translateY(-2px);
+}
+
+.order-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.order-id {
+    color: var(--primary-color);
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+.order-date {
+    color: #888;
+    display: block;
+    margin-top: 0.25rem;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+.status-processing {
+    background: rgba(255, 193, 7, 0.2);
+    color: #ffc107;
+}
+
+.status-shipped {
+    background: rgba(13, 110, 253, 0.2);
+    color: #0d6efd;
+}
+
+.status-delivered {
+    background: rgba(25, 135, 84, 0.2);
+    color: #198754;
+}
+
+.status-cancelled {
+    background: rgba(220, 53, 69, 0.2);
+    color: #dc3545;
+}
+
+.amount-details {
+    margin-top: 0.5rem;
+    line-height: 1.6;
+}
+
+.cancel-btn {
+    background: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+}
+
+.cancel-btn:hover {
+    background: rgba(220, 53, 69, 0.2);
+}
+
+.order-body {
+    padding: 1.5rem;
+}
+
+.section-title {
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+}
+
+.product-item {
+    padding: 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.product-item:last-child {
+    border-bottom: none;
+}
+
+.product-name {
+    margin: 0;
+    color: var(--text-color);
+}
+
+.product-details {
+    color: #888;
+    margin-top: 0.25rem;
+    font-size: 0.9rem;
+}
+
+.product-price {
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.address-box {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 1rem;
+    border-radius: 8px;
+    line-height: 1.6;
+}
+
+.empty-orders {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: #888;
+}
+
+.empty-orders i {
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+}
+
+.shop-btn {
+    display: inline-block;
+    background: var(--primary-color);
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    text-decoration: none;
+    margin-top: 1rem;
+    transition: background 0.3s ease;
+}
+
+.shop-btn:hover {
+    background: var(--secondary-color);
+    color: white;
+}
+
+/* Pagination Styles */
+.pagination {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 2rem;
+}
+
+.pagination-btn {
+    background: var(--background-light);
+    border: none;
+    color: var(--text-color);
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.pagination-btn.active {
+    background: var(--primary-color);
+    color: white;
+}
+
+.pagination-btn:hover:not(.active) {
+    background: rgba(255, 107, 0, 0.1);
+}
+
+/* Loading States */
+.loading-skeleton {
+    background: linear-gradient(90deg, 
+        var(--background-light) 25%, 
+        rgba(255, 255, 255, 0.1) 50%, 
+        var(--background-light) 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+    border-radius: 4px;
+}
+
+@keyframes loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .order-header .row > div {
+        margin-bottom: 1rem;
+    }
+    
+    .order-header .row > div:last-child {
+        margin-bottom: 0;
+    }
+    
+    .col-md-3 {
+        text-align: left !important;
+    }
+    
+    .cancel-btn {
+        width: 100%;
+    }
+    
+    .product-item .row > div {
+        text-align: left !important;
+    }
+    
+    .product-price {
+        margin-top: 0.5rem;
+    }
+    
+    .address-box {
+        margin-top: 1.5rem;
+    }
+}

@@ -34,7 +34,7 @@ const login = async (req, res) => {
 
         const isMatch = await bcrypt.compare(password, findId.password);
         if (!isMatch) {
-            return res.render("adminLogin", { message: "Invalid email or password" });
+            return res.render("adminLogin", { message: "Invalid  password" });
         }
         
         req.session.admin = true;
@@ -255,16 +255,31 @@ const updateCategory = async (req, res) => {
 
 const loadProduct = async (req,res) => {
     try {
-        const products = await Product.find()
-            .populate('category', 'name') // This will populate category with its name
-            .lean(); 
-        // Add full image URLs to products
+        const searchQuery = req.query.search;
+        let query = {};
+
+        if (searchQuery) {
+            query = {
+                $or: [
+                    { name: { $regex: searchQuery, $options: 'i' } },
+                    { description: { $regex: searchQuery, $options: 'i' } }
+                ]
+            };
+        }
+
+        const products = await Product.find(query)
+            .populate('category', 'name')
+            .lean();
+
         const productsWithImages = products.map(product => ({
             ...product,
-            images: product.images.map(image => image.startsWith('http') ? image : image) // Keep image paths as is if they're URLs
+            images: product.images.map(image => image.startsWith('http') ? image : image)
         }));
 
-        res.render("product", { products: productsWithImages });
+        res.render("product", { 
+            products: productsWithImages,
+            searchQuery: searchQuery || '' 
+        });
     } catch (error) {
         console.log("Error loading products:", error.message);
         res.status(500).json({ message: "Failed to load products" });
@@ -411,25 +426,15 @@ const loadEditProduct = async (req, res) => {
 const updateProduct = async (req, res) => {
     try {
         const productId = req.params.id;
-        const { name, description, regularPrice, salePrice, category } = req.body;
+        const { name, description, regularPrice, salePrice, category, stock } = req.body;
         const product = await Product.findById(productId);
 
         if (!product) {
             return res.status(404).json({ success: false, message: "Product not found" });
         }
 
-        const existingImagesCount = product.images.length;
-        const newImagesCount = req.files?.images ? (Array.isArray(req.files.images) ? req.files.images.length : 1) : 0;
-        const totalImagesCount = existingImagesCount + newImagesCount;
-
-        if (totalImagesCount < 3) {
-            return res.status(400).json({ 
-                success: false, 
-                message: `Product must have at least 3 images. Current: ${existingImagesCount}, New: ${newImagesCount}, Required: ${3 - totalImagesCount} more` 
-            });
-        }
-
-        if (req.files?.images) {
+        // Handle image updates
+        if (req.files?.images && req.files.images.length > 0) {
             const images = Array.isArray(req.files.images) ? req.files.images : [req.files.images];
             const uploadPromises = images.map(async (file) => {
                 const imagePath = `/uploads/products/${Date.now()}-${file.originalname}`;
@@ -440,17 +445,39 @@ const updateProduct = async (req, res) => {
             });
 
             const newImages = await Promise.all(uploadPromises);
-            product.images.push(...newImages);
+            
+            // If there are existing images, combine them with new ones
+            if (product.images && product.images.length > 0) {
+                product.images = [...product.images, ...newImages];
+            } else {
+                product.images = newImages;
+            }
         }
 
+        // Ensure minimum image requirement
+        if (product.images.length < 3) {
+            return res.status(400).json({ 
+                success: false, 
+                message: `Product must have at least 3 images. Current: ${product.images.length}, Required: ${3 - product.images.length} more` 
+            });
+        }
+
+        // Update product details
         product.name = name;
         product.description = description;
-        product.regularPrice = regularPrice;
-        product.salePrice = salePrice || regularPrice;
+        product.regularPrice = Number(regularPrice);
+        product.salePrice = salePrice ? Number(salePrice) : Number(regularPrice);
         product.category = category;
+        product.stock = Number(stock);
+        product.status = Number(stock) > 0 ? 'In Stock' : 'Out of Stock';
 
         await product.save();
-        return res.status(200).json({ success: true, message: "Product updated successfully" });
+        
+        return res.status(200).json({ 
+            success: true, 
+            message: "Product updated successfully",
+            product: product
+        });
     } catch (error) {
         console.error('Error updating product:', error);
         return res.status(500).json({ success: false, message: "Error updating product" });
