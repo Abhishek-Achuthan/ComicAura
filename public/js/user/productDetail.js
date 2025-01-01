@@ -1,5 +1,4 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize thumbnail gallery first
     const galleryThumbs = new Swiper('.gallery-thumbs', {
         spaceBetween: 10,
         slidesPerView: 4,
@@ -8,7 +7,6 @@ document.addEventListener('DOMContentLoaded', function() {
         watchSlidesVisibility: true
     });
 
-    // Initialize main gallery
     const galleryMain = new Swiper('.gallery-main', {
         spaceBetween: 10,
         slidesPerView: 1,
@@ -21,7 +19,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Zoom functionality
     const zoomContainers = document.querySelectorAll('.zoom-container');
     zoomContainers.forEach(container => {
         const img = container.querySelector('.zoom-image');

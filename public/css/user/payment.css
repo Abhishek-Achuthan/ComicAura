@@ -1,0 +1,48 @@
+.payment-methods {
+    background: #fff;
+    border-radius: 8px;
+    padding: 1rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 1rem;
+}
+
+.payment-method {
+    padding: 1rem;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: background-color 0.2s;
+}
+
+.payment-method:hover {
+    background-color: #f8f9fa;
+}
+
+.payment-method:last-child {
+    border-bottom: none;
+}
+
+.payment-method label {
+    margin-bottom: 0;
+    cursor: pointer;
+    flex-grow: 1;
+    font-weight: 500;
+}
+
+.payment-method input[type="radio"] {
+    cursor: pointer;
+    width: 1.2em;
+    height: 1.2em;
+}
+
+.fa-credit-card { color: #2874f0; }
+.fa-money-bill-wave { color: #388e3c; }
+.fa-wallet { color: #ff9800; }
+
+.section-title {
+    color: #333;
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}

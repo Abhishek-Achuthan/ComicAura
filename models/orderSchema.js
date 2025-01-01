@@ -1,26 +1,63 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 
 const orderSchema = new mongoose.Schema({
     userId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
+        ref: 'User',
         required: true
     },
-    products: [{
+    items: [{
         productId: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: "Product",
+            ref: 'Product',
             required: true
         },
         quantity: {
             type: Number,
-            required: true
+            required: true,
+            min: 1
         },
         price: {
             type: Number,
             required: true
         }
     }],
+    shippingAddress: {
+        name: {
+            type: String,
+            required: true
+        },
+        addressType: {
+            type: String,
+            required: true,
+            enum: ['home', 'work', 'other']
+        },
+        street: {
+            type: String,
+            required: true
+        },
+        city: {
+            type: String,
+            required: true
+        },
+        state: {
+            type: String,
+            required: true
+        },
+        country: {
+            type: String,
+            required: true,
+            default: 'India'
+        },
+        pinCode: {
+            type: String,
+            required: true
+        },
+        phoneNumber: {
+            type: String,
+            required: true
+        }
+    },
     subTotal: {
         type: Number,
         required: true
@@ -33,55 +70,62 @@ const orderSchema = new mongoose.Schema({
         type: Number,
         required: true
     },
-    shippingAddress: {
-        name: {
-            type: String,
-            required: true
-        },
-        phoneNumber: {
-            type: Number,
-            required: true
-        },
-        country: {
-            type: String,
-            required: true
-        },
-        state: {
-            type: String,
-            required: true
-        },
-        city: {
-            type: String,
-            required: true
-        },
-        street: {
-            type: String,
-            required: true
-        },
-        pinCode: {
-            type: Number,
-            required: true
-        },
-        addressType: {
-            type: String,
-            enum: ['home', 'work', 'other'],
-            required: true
-        }
-    },
     paymentMethod: {
         type: String,
-        enum: ["COD"],
-        required: true
+        required: true,
+        enum: ['COD', 'razorpay', 'wallet']
+    },
+    paymentStatus: {
+        type: String,
+        enum: ['Pending', 'Processing', 'Paid', 'Failed', 'Refunded'],
+        default: 'Pending'
     },
     orderStatus: {
         type: String,
-        enum: ["Pending", "Processing", "Shipped", "Delivered", "Cancelled"],
-        default: "Pending"
+        enum: ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled', 'Returned'],
+        default: 'Pending'
+    },
+    razorpayOrderId: {
+        type: String
+    },
+    razorpayPaymentId: {
+        type: String
     },
     orderDate: {
         type: Date,
         default: Date.now
+    },
+    statusHistory: [{
+        status: {
+            type: String,
+            required: true
+        },
+        comment: String,
+        date: {
+            type: Date,
+            default: Date.now
+        }
+    }],
+    isReturned: {
+        type: Boolean,
+        default: false
+    },
+    returnReason: {
+        type: String
+    },
+    returnDate: {
+        type: Date
+    },
+    deliveryDate: {
+        type: Date
     }
 });
 
-module.exports = mongoose.model("Order", orderSchema);
+// Method to update order status
+orderSchema.methods.updateStatus = async function(status, comment) {
+    this.orderStatus = status;
+    this.statusHistory.push({ status, comment });
+    return this.save();
+};
+
+module.exports = mongoose.model('Order', orderSchema);

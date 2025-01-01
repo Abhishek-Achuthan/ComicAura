@@ -262,7 +262,6 @@ const loadProduct = async (req,res) => {
             query = {
                 $or: [
                     { name: { $regex: searchQuery, $options: 'i' } },
-                    { description: { $regex: searchQuery, $options: 'i' } }
                 ]
             };
         }
@@ -315,8 +314,7 @@ const addProduct = async (req, res) => {
             });
         }
 
-        // Check if files were uploaded
-        if (!req.files || req.files.length <=3) {
+        if (!req.files || req.files.length <3) {
             return res.status(400).json({ 
                 success: false,
                 message: 'Please upload at least three images' 

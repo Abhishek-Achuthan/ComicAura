@@ -136,7 +136,7 @@
                         <div id="cartItems">
                             <%  if(cart && cart.items.length > 0) { %>
                                 <% cart.items.forEach(function(item) { %>
-                                    <div class="cart-item" data-id="<%= item.product.productId %>" data-price="<%= item.product.regularPrice %>">
+                                    <div class="cart-item" data-price="<%= item.product.regularPrice %>" data-id="<%= item._id %>">
                                         <div class="row">
                                             <div class="col-md-3" style=" min-height: 200px; display: flex; align-items: center; justify-content: center;">
                                                 <% const imagePath = item.product.images[0]; %>
@@ -208,17 +208,6 @@
                             <div class="summary-item">
                                 <span>Tax</span>
                                 <span id="tax">₹<%= cart.tax.toFixed(2) %></span>
-                            </div>
-
-                            <div class="promo-code">
-                                <div class="promo-header">
-                                    <i class="bi bi-tag-fill"></i>
-                                    <span>Have a promo code?</span>
-                                </div>
-                                <div class="promo-input">
-                                    <input type="text" placeholder="Enter code" id="promoCode">
-                                    <button class="apply-btn" id="applyPromo">Apply</button>
-                                </div>
                             </div>
 
                             <div class="total-section">
@@ -341,61 +330,6 @@
             if (checkoutBtn) {
                 checkoutBtn.addEventListener('click', function() {
                     window.location.href = '/checkout';
-                });
-            }
-
-            const cartContainer = document.getElementById('cartItems');
-            
-            if (cartContainer) {
-                cartContainer.addEventListener('click', async (event) => {
-                    const button = event.target.closest(".quantity-btn");
-                    if (!button) return;
-                    
-                    const prodId = button.dataset.id;
-                    const action = button.classList.contains("increase") ? "increase" : "decrease";
-                    const quantityInput = button.parentElement.querySelector(".quantity-input");
-                    const currentQty = parseInt(quantityInput.value, 10);
-
-                    // Check quantity limits
-                    if (action === "decrease" && currentQty <= 1) {
-                        toastr.warning('Quantity cannot be less than 1');
-                        return;
-                    }
-                    if (action === "increase" && currentQty >= 5) {
-                        toastr.warning('Maximum quantity limit is 5');
-                        return;
-                    }
-
-                    try {
-                        const response = await fetch('/updateCartQuantity', {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ prodId, action })
-                        });
-
-                        const data = await response.json();
-                        if (data.success) {
-                            // Update quantity input
-                            quantityInput.value = data.cartData.quantity;
-                            
-                            // Update item total
-                            const cartItem = button.closest('.cart-item');
-                            cartItem.querySelector('.price-container').innerHTML = `₹${data.cartData.itemTotal.toFixed(2)}`;
-                            
-                            // Update cart summary
-                            document.getElementById('subtotal').textContent = `₹${data.cartData.subtotal.toFixed(2)}`;
-                            document.getElementById('tax').textContent = `₹${data.cartData.tax.toFixed(2)}`;
-                            document.getElementById('total').textContent = `₹${data.cartData.total.toFixed(2)}`;
-                            document.getElementById('itemsCount').textContent = `${data.cartData.itemCount} item${data.cartData.itemCount !== 1 ? 's' : ''}`;
-                            
-                            toastr.success(data.message);
-                        } else {
-                            toastr.error(data.message || 'Failed to update quantity');
-                        }
-                    } catch (error) {
-                        console.error("Error updating cart:", error);
-                        toastr.error('Failed to update cart. Please try again');
-                    }
                 });
             }
 

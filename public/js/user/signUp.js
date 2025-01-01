@@ -1,4 +1,3 @@
-// mkaed the toggle button active but not consistent
 document.querySelectorAll('.password-toggle').forEach(toggle => {
     toggle.addEventListener('click', function() {
         const input = this.previousElementSibling;
@@ -51,15 +50,14 @@ document.addEventListener('DOMContentLoaded', function() {
         },
         phoneNumber: {
             required: true,
-            pattern: /^[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,6}$/,
+            pattern: /^\+?[1-9]\d{9,14}$/,
             errorMessage: 'Please enter a valid phone number'
         },
         password: {
             required: true,
             minLength: 8,
-            maxLength: 128,
             pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
-            errorMessage: 'Password must be 8-128 characters, include uppercase, lowercase, number, and special character'
+            errorMessage: 'Password must be at least 8 characters and contain uppercase, lowercase, number and special character'
         },
         confirmPassword: {
             required: true,
@@ -69,72 +67,65 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     function showError(field, message) {
-        field.classList.remove('is-valid');
-        field.classList.add('is-invalid');
-        
-        const existingError = field.nextElementSibling;
-        if (existingError && existingError.classList.contains('invalid-feedback')) {
-            existingError.remove();
-        }
-        
-        const errorElement = document.createElement('div');
-        errorElement.className = 'invalid-feedback';
-        
-        if (field.name === 'password' || field.name === 'confirmPassword') {
-            errorElement.style.marginTop = '0.25rem';
+        const errorElement = field.nextElementSibling;
+        if (errorElement && errorElement.classList.contains('error-message')) {
             errorElement.textContent = message;
+            errorElement.style.display = 'block';
         } else {
-            const icon = document.createElement('i');
-            icon.className = 'fas fa-exclamation-circle me-2';
-            errorElement.appendChild(icon);
-            errorElement.appendChild(document.createTextNode(message));
+            const error = document.createElement('div');
+            error.className = 'error-message';
+            error.textContent = message;
+            error.style.color = '#ff0000';
+            error.style.fontSize = '0.8em';
+            error.style.marginTop = '5px';
+            field.parentNode.insertBefore(error, field.nextSibling);
         }
-        
-        field.parentNode.insertBefore(errorElement, field.nextSibling);
+        field.classList.add('error');
     }
 
     function clearError(field) {
-        field.classList.remove('is-invalid');
-        field.classList.remove('is-valid');
-        
-        const existingError = field.nextElementSibling;
-        if (existingError && existingError.classList.contains('invalid-feedback')) {
-            existingError.remove();
+        const errorElement = field.nextElementSibling;
+        if (errorElement && errorElement.classList.contains('error-message')) {
+            errorElement.style.display = 'none';
         }
+        field.classList.remove('error');
     }
 
     function validateField(fieldName, value) {
         const rules = validationRules[fieldName];
-        
-        clearError(fields[fieldName]);
-        
-        if (rules.required && !value.trim()) {
-            showError(fields[fieldName], `${fieldName} is required`);
+        const field = fields[fieldName];
+
+        if (!rules) return true;
+
+        if (rules.required && !value) {
+            showError(field, `${fieldName} is required`);
             return false;
         }
 
         if (rules.minLength && value.length < rules.minLength) {
-            showError(fields[fieldName], rules.errorMessage);
+            showError(field, rules.errorMessage);
             return false;
         }
 
         if (rules.maxLength && value.length > rules.maxLength) {
-            showError(fields[fieldName], rules.errorMessage);
+            showError(field, rules.errorMessage);
             return false;
         }
 
         if (rules.pattern && !rules.pattern.test(value)) {
-            showError(fields[fieldName], rules.errorMessage);
+            showError(field, rules.errorMessage);
             return false;
         }
 
         if (rules.match) {
-            const originalValue = fields[rules.match].value;
-            if (value !== originalValue) {
-                showError(fields[fieldName], rules.errorMessage);
+            const matchValue = fields[rules.match].value;
+            if (value !== matchValue) {
+                showError(field, rules.errorMessage);
                 return false;
             }
         }
+
+        clearError(field);
         return true;
     }
 
@@ -152,5 +143,11 @@ document.addEventListener('DOMContentLoaded', function() {
         if (isValid) {
             form.submit();
         }
+    });
+
+    Object.keys(fields).forEach(fieldName => {
+        fields[fieldName].addEventListener('input', function() {
+            validateField(fieldName, this.value);
+        });
     });
 });

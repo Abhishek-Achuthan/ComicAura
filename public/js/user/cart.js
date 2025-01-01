@@ -1,46 +1,93 @@
-function showToast(type, message) {
-    const toast = Swal.mixin({
-        toast: true,
-        position: 'top-end',
-        showConfirmButton: false,
-        timer: 3000,
-        timerProgressBar: true
-    });
+document.addEventListener('DOMContentLoaded', () => {
+    toastr.options = {
+        positionClass: "toast-top-right",
+        timeOut: 2000
+    };
 
-    toast.fire({
-        icon: type,
-        title: message
-    });
-}
+    document.querySelectorAll('.quantity-btn').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            if (this.disabled) return;
+            
+            const productId = this.getAttribute('data-id');
+            const action = this.classList.contains('increase') ? 'increase' : 'decrease';
+            const quantityInput = this.parentElement.querySelector('.quantity-input');
+            const currentQty = parseInt(quantityInput.value);
 
-async function addToCart(productId) {
+            if (action === 'increase' && currentQty >= 5) {
+                toastr.warning('Maximum 5 items allowed');
+                return;
+            }
+            if (action === 'decrease' && currentQty <= 1) {
+                toastr.warning('Minimum quantity is 1');
+                return;
+            }
+
+            this.disabled = true;
+            
+            try {
+                const response = await fetch('/updateCartQuantity', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prodId: productId, action })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    quantityInput.value = action === 'increase' ? currentQty + 1 : currentQty - 1;
+                    
+                    const cartItem = this.closest('.cart-item');
+                    const price = parseFloat(cartItem.dataset.price);
+                    const total = price * parseInt(quantityInput.value);
+                    cartItem.querySelector('.price-container').innerHTML = `₹${total.toFixed(2)}`;
+
+                    document.getElementById('subtotal').textContent = `₹${data.itemSubtotal.toFixed(2)}`;
+                    document.getElementById('tax').textContent = `₹${data.tax.toFixed(2)}`;
+                    document.getElementById('total').textContent = `₹${data.total.toFixed(2)}`;
+                    document.getElementById('itemsCount').textContent = `${data.cartCount} item${data.cartCount !== 1 ? 's' : ''}`;
+                    
+                    toastr.success('Cart updated');
+                } else {
+                    toastr.error(data.message || 'Update failed');
+                    setTimeout(() => window.location.reload(), 1000);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                toastr.error('Failed to update cart');
+            } finally {
+                this.disabled = false;
+            }
+        });
+    });
+});
+
+
+async function addToCart(productId, button) {
     try {
         const response = await fetch('/cart/add', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ productId })
         });
 
         const data = await response.json();
+        
+        if (data.success) {
+            document.getElementById('cartCount').textContent = data.cartCount;
+            toastr.success('Item added to cart');
 
-        if (!response.ok) {
-            // Show the error toast message from the server
-            showToast(data.toast.type || 'error', data.toast.message || 'Something went wrong');
-            return;
+            // Update button
+            if (button) {
+                button.innerHTML = '<i class="fas fa-shopping-cart"></i> Go to Cart';
+                button.classList.add('in-cart');
+                button.onclick = () => window.location.href = '/cart';
+            }
+        } else {
+            toastr.error(data.message || 'Failed to add item');
         }
-
-        const cartCountElement = document.getElementById('cartCount');
-        if (cartCountElement && data.cartCount) {
-            cartCountElement.textContent = data.cartCount;
-        }
-
-        showToast(data.toast.type || 'success', data.toast.message || 'Item added to cart');
-
     } catch (error) {
-        console.error('Error adding to cart:', error);
-        showToast('error', 'Failed to add item to cart');
+        console.error('Error:', error);
+        toastr.error('Failed to add item');
     }
 }
 
@@ -48,116 +95,27 @@ async function removeFromCart(productId) {
     try {
         const response = await fetch('/cart/remove', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ productId })
         });
 
         const data = await response.json();
-
-        if (!response.ok) {
-            showToast(data.toast.type || 'error', data.toast.message || 'Something went wrong');
-            return false;
+        
+        if (data.success) {
+            const cartItem = document.querySelector(`.cart-item[data-id="${productId}"]`);
+            if (cartItem) cartItem.remove();
+            
+            document.getElementById('cartCount').textContent = data.cartCount;
+            toastr.success('Item removed from cart');
+            
+            if (data.cartCount === 0) {
+                setTimeout(() => location.reload(), 500);h
+            }
+        } else {
+            toastr.error(data.message || 'Failed to remove item');
         }
-
-        showToast(data.toast.type || 'success', data.toast.message || 'Item removed from cart');
-        return true;
-
     } catch (error) {
-        console.error('Error removing from cart:', error);
-        showToast('error', 'Failed to remove item from cart');
-        return false;
+        console.error('Error:', error);
+        toastr.error('Failed to remove item');
     }
 }
-
-document.addEventListener('DOMContentLoaded', () => {
-    const increaseButtons = document.querySelectorAll('.quantity-btn.increase');
-    const decreaseButtons = document.querySelectorAll('.quantity-btn.decrease');
-
-    // Handle increase button clicks
-    increaseButtons.forEach(button => {
-        button.addEventListener('click', async () => {
-            const productId = button.dataset.id;
-            const quantityInput = button.parentElement.querySelector('.quantity-input');
-            const currentQty = parseInt(quantityInput.value);
-
-            if (currentQty >= 5) {
-                showToast('warning', 'Maximum 5 items allowed per product');
-                return;
-            }
-
-            try {
-                const response = await fetch('/cart/update-quantity', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prodId: productId, action: 'increase' })
-                });
-
-                const data = await response.json();
-
-                if (response.ok && data.success) {
-                    // Update quantity
-                    quantityInput.value = currentQty + 1;
-
-                    // Update totals
-                    document.getElementById('subtotal').textContent = `₹${data.itemSubtotal.toFixed(2)}`;
-                    document.getElementById('tax').textContent = `₹${data.tax.toFixed(2)}`;
-                    document.getElementById('total').textContent = `₹${data.total.toFixed(2)}`;
-                    document.getElementById('itemsCount').textContent = `${data.cartCount} item${data.cartCount !== 1 ? 's' : ''}`;
-                    document.getElementById('cartCount').textContent = data.cartCount;
-
-                    showToast('success', 'Cart updated successfully');
-                } else {
-                    showToast('error', data.toast?.message || 'Failed to update cart');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                showToast('error', 'Failed to update cart');
-            }
-        });
-    });
-
-    // Handle decrease button clicks
-    decreaseButtons.forEach(button => {
-        button.addEventListener('click', async () => {
-            const productId = button.dataset.id;
-            const quantityInput = button.parentElement.querySelector('.quantity-input');
-            const currentQty = parseInt(quantityInput.value);
-
-            if (currentQty <= 1) {
-                showToast('warning', 'Minimum quantity is 1');
-                return;
-            }
-
-            try {
-                const response = await fetch('/cart/update-quantity', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prodId: productId, action: 'decrease' })
-                });
-
-                const data = await response.json();
-
-                if (response.ok && data.success) {
-                    // Update quantity
-                    quantityInput.value = currentQty - 1;
-
-                    // Update totals
-                    document.getElementById('subtotal').textContent = `₹${data.itemSubtotal.toFixed(2)}`;
-                    document.getElementById('tax').textContent = `₹${data.tax.toFixed(2)}`;
-                    document.getElementById('total').textContent = `₹${data.total.toFixed(2)}`;
-                    document.getElementById('itemsCount').textContent = `${data.cartCount} item${data.cartCount !== 1 ? 's' : ''}`;
-                    document.getElementById('cartCount').textContent = data.cartCount;
-
-                    showToast('success', 'Cart updated successfully');
-                } else {
-                    showToast('error', data.toast?.message || 'Failed to update cart');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                showToast('error', 'Failed to update cart');
-            }
-        });
-    });
-});

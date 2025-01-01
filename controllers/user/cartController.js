@@ -3,14 +3,19 @@ const Product = require("../../models/productSchema.js");
 const Cart = require("../../models/cartSchema.js");
 const mongoose = require("../../config/database.js")
 
-
-
 const loadCart = async (req, res) => {
     try {
         const userId = req.session.userId;
-        const cart = await Cart.findOne({ userId }).populate('items.productId', 'name regularPrice salePrice images _id').lean();
- 
- 
+        const user = await User.findById(userId).lean();
+        
+        if (!user) {
+            return res.redirect('/login?error=Please login to view your cart');
+        }
+
+        const cart = await Cart.findOne({ userId })
+            .populate('items.productId', 'name regularPrice salePrice images _id')
+            .lean();
+
         let cartData = {
             items: [],
             subtotal: 0,
@@ -32,20 +37,18 @@ const loadCart = async (req, res) => {
                 quantity: item.quantity
             }));
 
-            // Calculate totals
             cartData.items.forEach(item => {
                 const price = item.product.salePrice || item.product.regularPrice;
                 cartData.subtotal += price * item.quantity;
                 cartData.itemCount += item.quantity;
             });
 
-            // Calculate tax (5%) and total
             cartData.tax = cartData.subtotal * 0.05;
             cartData.total = cartData.subtotal + cartData.tax;
         }
 
         res.render("cart", {
-            user: userId,
+            user: user,
             cart: cartData,
             serverMessages: {
                 success: req.query.success,
@@ -56,9 +59,9 @@ const loadCart = async (req, res) => {
         console.error(error);
         res.status(500).json({ success: false, message: "Internal server error" });
     }
- }
- 
- const addToCart = async (req, res) => {
+}
+
+const addToCart = async (req, res) => {
     try {
         const userId = req.session.userId;
         if (!userId) {
@@ -68,7 +71,7 @@ const loadCart = async (req, res) => {
                 toast: { type: 'warning', message: 'Please login to add items to cart' }
             });
         }
-     
+
         const productId = req.body.productId;
         const product = await Product.findById(productId);
 
@@ -99,20 +102,23 @@ const loadCart = async (req, res) => {
                 }]
             });
         } else {
-            const existingItem = cart.items.find(item => 
-                item.productId.toString() === productId
+            // Check if product already exists in cart
+            const existingItemIndex = cart.items.findIndex(item => 
+                item.productId.toString() === productId.toString()
             );
 
-            if (existingItem) {
-                if (existingItem.quantity >= 5) {
+            if (existingItemIndex !== -1) {
+                // If product exists and quantity is less than 5, increment it
+                if (cart.items[existingItemIndex].quantity >= 5) {
                     return res.status(400).json({
                         success: false,
                         message: "Quantity limit reached",
                         toast: { type: 'warning', message: 'Maximum 5 items allowed per product' }
                     });
                 }
-                existingItem.quantity += 1;
+                cart.items[existingItemIndex].quantity += 1;
             } else {
+                // If product doesn't exist, add it
                 cart.items.push({
                     productId: productId,
                     quantity: 1
@@ -138,13 +144,12 @@ const loadCart = async (req, res) => {
             toast: { type: 'error', message: 'Failed to add item to cart' }
         });
     }
-};
- 
- const updateCartQuantity = async (req, res) => {
+}
+
+const updateCartQuantity = async (req, res) => {
     try {
         const userId = req.session.userId;
         const { prodId, action } = req.body;
-        console.log('Action:', action);
 
         const cart = await Cart.findOne({ userId });
         if (!cart) {
@@ -186,18 +191,15 @@ const loadCart = async (req, res) => {
             newQuantity -= 1;
         }
 
-        // Update the quantity
         cart.items[itemIndex].quantity = newQuantity;
 
-        // Save the cart
         await cart.save();
 
-        // Populate product details
         await cart.populate('items.productId');
-        
+
         let subtotal = 0;
         let itemCount = 0;
-        
+
         cart.items.forEach(item => {
             const price = item.productId.salePrice || item.productId.regularPrice;
             subtotal += price * item.quantity;
@@ -215,7 +217,6 @@ const loadCart = async (req, res) => {
             total: total,
             toast: { type: 'success', message: 'Cart updated successfully' }
         });
-
     } catch (error) {
         console.error('Error updating cart quantity:', error);
         res.status(500).json({
@@ -224,44 +225,36 @@ const loadCart = async (req, res) => {
             toast: { type: 'error', message: 'Failed to update cart' }
         });
     }
-};
+}
 
- const removeFromCart = async(req,res) => {
-   
-   try {
+const removeFromCart = async(req,res) => {
+    try {
+        const {cartItemId} = req.body;
+        const user = req.session.userId;
 
-      const {cartItemId} = req.body;
-      const user = req.session.userId;
-      console.log(user)
-      
+        await Cart.findOneAndUpdate(
+            {userId : user},
+            {$pull:{items:{productId:cartItemId}}},
+            {new:true}
+        );
 
-      await Cart.findOneAndUpdate(
-         {userId : user},
-         {$pull:{items:{productId:cartItemId}}},
-         {new:true}
-      );
-      console.log("item removed from the cart");
+        return res.status(200).json({
+            success:true,
+            message:"Item removed from the cart"
+        });
+    } catch (error) {
+        console.log(error.message);
 
-      return res.status(200).json({
-         success:true,
-         message:"Item removed from the cart"
-      });
+        return res.status(500).json({
+            success:false,
+            message:"internal error"
+        });
+    }
+}
 
-   } catch (error) {
-
-      console.log(error.message);
-
-      return res.status(500).json({
-         success:false,
-         message:"internal error"
-      });
-   }
- }
-
-
- module.exports = {
+module.exports = {
     loadCart,
     addToCart,
     updateCartQuantity,
     removeFromCart,
- }
+}

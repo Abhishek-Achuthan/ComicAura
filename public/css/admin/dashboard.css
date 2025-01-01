@@ -72,8 +72,11 @@ body {
 
 /* Main Content */
 .main-content {
-    margin-left: 280px;
+    margin-left: 150px;
     padding: 20px;
+}
+.main-content-p-left{
+    padding-left: 10rem;
 }
 
 .content-header {

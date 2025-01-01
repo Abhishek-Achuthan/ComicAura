@@ -33,11 +33,11 @@ const userSchema = new mongoose.Schema({
         required: function () {
             return !this.socialLogin.isUsed; 
         },
-    },isBlocked:{
+    },
+    isBlocked:{
         type: Boolean,
         default:false,
     },
-
     socialLogin: {
         isUsed: {
             type: Boolean,
@@ -52,14 +52,24 @@ const userSchema = new mongoose.Schema({
             type: String, 
         },
     },
-
     isAdmin: {
         type: Boolean,
         default: false,
     },
+    wallet: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Wallet'
+    }
 });
 
 userSchema.index({ email: 1 });
 userSchema.index({ phoneNumber: 1 });
+
+// Method to get user's wallet
+userSchema.methods.getWallet = async function() {
+    // Require the wallet model here to avoid circular dependency
+    const Wallet = require('./walletModel');
+    return await Wallet.getOrCreateWallet(this._id);
+};
 
 module.exports = mongoose.model('User', userSchema);

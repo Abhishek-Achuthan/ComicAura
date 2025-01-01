@@ -1,5 +1,53 @@
 const Order = require("../../models/orderSchema.js");
 const Product = require("../../models/productSchema.js");
+const ReturnRequest = require("../../models/returnRequestModel.js");
+const PDFDocument = require('pdfkit');
+const ExcelJS = require('exceljs');
+
+// Helper function to format date range
+const getDateRange = (type, customStartDate, customEndDate) => {
+    const now = new Date();
+    let start = new Date(now);
+    let end = new Date(now);
+
+    switch (type) {
+        case 'daily':
+            start.setHours(0, 0, 0, 0);
+            end.setHours(23, 59, 59, 999);
+            break;
+        case 'weekly':
+            start.setDate(now.getDate() - now.getDay()); // Start of week (Sunday)
+            end.setDate(start.getDate() + 6); // End of week (Saturday)
+            start.setHours(0, 0, 0, 0);
+            end.setHours(23, 59, 59, 999);
+            break;
+        case 'monthly':
+            start.setDate(1); // Start of month
+            start.setHours(0, 0, 0, 0);
+            end.setMonth(start.getMonth() + 1, 0); // End of month
+            end.setHours(23, 59, 59, 999);
+            break;
+        case 'yearly':
+            start.setMonth(0, 1); // Start of year
+            start.setHours(0, 0, 0, 0);
+            end.setMonth(11, 31); // End of year
+            end.setHours(23, 59, 59, 999);
+            break;
+        case 'custom':
+            if (!customStartDate || !customEndDate) {
+                throw new Error('Start and end dates are required for custom range');
+            }
+            start = new Date(customStartDate);
+            start.setHours(0, 0, 0, 0);
+            end = new Date(customEndDate);
+            end.setHours(23, 59, 59, 999);
+            break;
+        default:
+            throw new Error('Invalid date range type');
+    }
+
+    return { start, end };
+};
 
 const listOrders = async (req, res) => {
     try {
@@ -55,7 +103,7 @@ const listOrders = async (req, res) => {
 
         const orders = await Order.find(query)
             .populate('userId', 'name email')
-            .populate('products.productId')
+            .populate('items.productId')
             .populate('shippingAddress')
             .sort(sortOptions)
             .skip(skip)
@@ -72,8 +120,15 @@ const listOrders = async (req, res) => {
             }
         ]);
 
+        // Fetch return requests
+        const returnRequests = await ReturnRequest.find({ status: 'pending' })
+            .populate('order', '_id')
+            .populate('user', 'name')
+            .lean();
+
         res.render('orders', { 
             orders,
+            returnRequests,
             currentPage: 'orders',
             currentStatus: status || 'all',
             currentSort: sort,
@@ -97,7 +152,7 @@ const updateOrderStatus = async (req, res) => {
         const { orderId } = req.params;
         const { status } = req.body;
 
-        const validStatuses = ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled'];
+        const validStatuses = ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled', 'Returned'];
         if (!validStatuses.includes(status)) {
             return res.status(400).json({ 
                 message: "Invalid status" 
@@ -112,7 +167,7 @@ const updateOrderStatus = async (req, res) => {
             });
         }
 
-        if (order.orderStatus === 'Cancelled' || order.orderStatus === 'Delivered') {
+        if ((order.orderStatus === 'Cancelled' || order.orderStatus === 'Delivered') && status !== 'Returned') {
             return res.status(400).json({
                 success: false,
                 message: `Cannot update status of ${order.orderStatus.toLowerCase()} orders`
@@ -120,7 +175,7 @@ const updateOrderStatus = async (req, res) => {
         }
 
         if (status === 'Cancelled' && order.orderStatus !== 'Cancelled') {
-            const bulkOps = order.products.map(item => ({
+            const bulkOps = order.items.map(item => ({
                 updateOne: {
                     filter: { _id: item.productId },
                     update: { $inc: { stock: item.quantity } }
@@ -162,7 +217,7 @@ const cancelOrderAdmin = async (req, res) => {
             });
         }
 
-        const bulkOps = order.products.map(item => ({
+        const bulkOps = order.items.map(item => ({
             updateOne: {
                 filter: { _id: item.productId },
                 update: { $inc: { stock: item.quantity } }
@@ -214,6 +269,221 @@ const updateStock = async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ success: false, message: "Internal server error" });
+    }
+};
+
+const getSalesReport = async (req, res) => {
+    try {
+        const { reportType, startDate, endDate } = req.query;
+        
+        // Get date range using the helper function
+        const dateRange = getDateRange(reportType || 'daily', startDate, endDate);
+
+        // Find orders within the date range
+        const orders = await Order.find({
+            orderDate: {
+                $gte: dateRange.start,
+                $lte: dateRange.end
+            },
+            orderStatus: { $nin: ['Cancelled'] }
+        })
+        .populate('userId', 'email')
+        .populate('items.productId', 'name')
+        .sort({ orderDate: -1 });
+
+        // Calculate statistics
+        let totalAmount = 0;
+        let totalDiscount = 0;
+        let totalCouponDiscount = 0;
+
+        orders.forEach(order => {
+            totalAmount += order.totalAmount || 0;
+            totalDiscount += order.discount || 0;
+            totalCouponDiscount += order.couponDiscount || 0;
+        });
+
+        const report = {
+            dateRange: {
+                start: dateRange.start,
+                end: dateRange.end
+            },
+            totalOrders: orders.length,
+            totalAmount,
+            totalDiscount,
+            totalCouponDiscount,
+            netAmount: totalAmount - totalDiscount - totalCouponDiscount,
+            orders: orders.map(order => ({
+                _id: order._id,
+                userId: {
+                    _id: order.userId._id,
+                    email: order.userId.email
+                },
+                orderDate: order.orderDate,
+                orderStatus: order.orderStatus,
+                totalAmount: order.totalAmount,
+                discount: order.discount || 0,
+                couponDiscount: order.couponDiscount || 0,
+                netAmount: order.totalAmount - (order.discount || 0) - (order.couponDiscount || 0)
+            }))
+        };
+
+        res.json({
+            success: true,
+            report
+        });
+    } catch (error) {
+        console.error('Get sales report error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to generate sales report'
+        });
+    }
+};
+
+const downloadSalesReport = async (req, res) => {
+    try {
+        const { type } = req.params;
+        const { reportType, startDate, endDate } = req.query;
+        
+        // Get the sales data
+        const dateRange = getDateRange(reportType || 'daily', startDate, endDate);
+        const orders = await Order.find({
+            orderDate: {
+                $gte: dateRange.start,
+                $lte: dateRange.end
+            },
+            orderStatus: { $nin: ['Cancelled'] }
+        }).populate('userId', 'email').populate('items.productId', 'name');
+
+        // Calculate totals
+        let totalAmount = 0;
+        let totalDiscount = 0;
+        let totalCouponDiscount = 0;
+        orders.forEach(order => {
+            totalAmount += order.totalAmount || 0;
+            totalDiscount += order.discount || 0;
+            totalCouponDiscount += order.couponDiscount || 0;
+        });
+
+        const filename = `sales-report-${Date.now()}`;
+
+        if (type === 'pdf') {
+            // Generate PDF
+            const doc = new PDFDocument();
+            
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', `attachment; filename=${filename}.pdf`);
+
+            // Pipe the PDF directly to the response
+            doc.pipe(res);
+
+            // Add content to PDF
+            doc.fontSize(20).text('ComicAura Sales Report', { align: 'center' });
+            doc.moveDown();
+            doc.fontSize(12).text(`Date Range: ${dateRange.start.toLocaleDateString()} to ${dateRange.end.toLocaleDateString()}`);
+            doc.moveDown();
+
+            // Add summary
+            doc.fontSize(14).text('Summary');
+            doc.fontSize(12).text(`Total Orders: ${orders.length}`);
+            doc.text(`Total Amount: ₹${totalAmount.toFixed(2)}`);
+            doc.text(`Total Discount: ₹${(totalDiscount + totalCouponDiscount).toFixed(2)}`);
+            doc.text(`Net Amount: ₹${(totalAmount - totalDiscount - totalCouponDiscount).toFixed(2)}`);
+            doc.moveDown();
+
+            // Add orders table
+            doc.fontSize(14).text('Orders');
+            doc.moveDown();
+            
+            orders.forEach((order, index) => {
+                doc.fontSize(12).text(`${index + 1}. Order ID: ${order._id}`);
+                doc.fontSize(10)
+                    .text(`Customer: ${order.userId.email}`)
+                    .text(`Date: ${new Date(order.orderDate).toLocaleDateString()}`)
+                    .text(`Amount: ₹${order.totalAmount.toFixed(2)}`)
+                    .text(`Status: ${order.orderStatus}`);
+                doc.moveDown();
+            });
+
+            // End the document
+            doc.end();
+
+        } else if (type === 'excel') {
+            // Generate Excel
+            const workbook = new ExcelJS.Workbook();
+            const worksheet = workbook.addWorksheet('Sales Report');
+
+            // Add headers with styling
+            worksheet.columns = [
+                { header: 'Order ID', key: 'orderId', width: 30 },
+                { header: 'Customer', key: 'customer', width: 30 },
+                { header: 'Date', key: 'date', width: 15 },
+                { header: 'Amount', key: 'amount', width: 15 },
+                { header: 'Discount', key: 'discount', width: 15 },
+                { header: 'Net Amount', key: 'netAmount', width: 15 },
+                { header: 'Status', key: 'status', width: 15 }
+            ];
+
+            // Style the header row
+            const headerRow = worksheet.getRow(1);
+            headerRow.font = { bold: true, size: 12 };
+            headerRow.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FFE0E0E0' }
+            };
+
+            // Add data
+            orders.forEach(order => {
+                worksheet.addRow({
+                    orderId: order._id.toString(),
+                    customer: order.userId.email,
+                    date: new Date(order.orderDate).toLocaleDateString(),
+                    amount: order.totalAmount,
+                    discount: (order.discount || 0) + (order.couponDiscount || 0),
+                    netAmount: order.totalAmount - (order.discount || 0) - (order.couponDiscount || 0),
+                    status: order.orderStatus
+                });
+            });
+
+            // Add summary at the bottom with styling
+            worksheet.addRow([]);
+            worksheet.addRow([]);
+            
+            const summaryTitleRow = worksheet.addRow(['Summary']);
+            summaryTitleRow.font = { bold: true, size: 14 };
+            
+            const summaryRows = [
+                ['Total Orders', orders.length],
+                ['Total Amount', `₹${totalAmount.toFixed(2)}`],
+                ['Total Discount', `₹${(totalDiscount + totalCouponDiscount).toFixed(2)}`],
+                ['Net Amount', `₹${(totalAmount - totalDiscount - totalCouponDiscount).toFixed(2)}`]
+            ];
+
+            summaryRows.forEach(row => {
+                const newRow = worksheet.addRow(row);
+                newRow.font = { bold: true };
+            });
+
+            // Set content type and headers for excel file
+            res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            res.setHeader('Content-Disposition', `attachment; filename=${filename}.xlsx`);
+
+            // Write to response
+            await workbook.xlsx.write(res);
+            res.end();
+        } else {
+            res.status(400).json({
+                success: false,
+                message: 'Invalid download type'
+            });
+        }
+    } catch (error) {
+        console.error('Download sales report error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to download sales report'
+        });
     }
 };
 
@@ -284,29 +554,71 @@ const getOrderStats = async (req, res) => {
 
 const getOrderDetails = async (req, res) => {
     try {
-        const { orderId } = req.params;
+        const orderId = req.params.orderId;
+        
+        // Get order with populated fields
         const order = await Order.findById(orderId)
             .populate('userId', 'name email')
-            .populate('products.productId', 'name')
-            .populate('shippingAddress')
-            .lean();
+            .populate('items.productId', 'name price');
 
         if (!order) {
-            return res.status(404).json({ error: 'Order not found' });
+            return res.status(404).json({
+                success: false,
+                message: 'Order not found'
+            });
         }
 
-        res.json(order);
+        // Get return request if exists
+        const returnRequest = await ReturnRequest.findOne({ order: orderId });
+        
+        // Add return request info to order object
+        const orderData = order.toObject();
+        if (returnRequest) {
+            orderData.returnRequested = true;
+            orderData.returnRequestDate = returnRequest.requestDate;
+            orderData.returnReason = returnRequest.reason;
+            orderData.returnStatus = returnRequest.status;
+            orderData.returnRequestId = returnRequest._id;
+            if (returnRequest.rejectionReason) {
+                orderData.rejectionReason = returnRequest.rejectionReason;
+            }
+        }
+
+        res.json({
+            success: true,
+            order: orderData
+        });
     } catch (error) {
-        console.error('Error in getOrderDetails:', error);
-        res.status(500).json({ error: 'Failed to fetch order details' });
+        console.error('Get order details error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch order details'
+        });
+    }
+};
+
+// Load the sales report page
+const loadSalesReport = async (req, res) => {
+    try {
+        res.render('sales-report', {
+            title: 'Sales Report',
+            admin: req.session.admin,
+            currentPage: 'sales'
+        });
+    } catch (error) {
+        console.error('Error loading sales report page:', error);
+        res.status(500).send('Internal Server Error');
     }
 };
 
 module.exports = {
     listOrders,
+    getOrderDetails,
     updateOrderStatus,
     cancelOrderAdmin,
     updateStock,
+    getSalesReport,
+    downloadSalesReport,
     getOrderStats,
-    getOrderDetails
+    loadSalesReport
 };

@@ -130,7 +130,7 @@
 
         .content-main {
             padding: 30px;
-            margin-left: 280px;
+            margin : 0 10rem;
             background-color: var(--background-dark);
             min-height: 100vh;
         }

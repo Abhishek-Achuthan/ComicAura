@@ -17,13 +17,18 @@
                     <% newArrivals.forEach(product => { %>
                         <div class="item">
                             <div class="product-card">
-                                <a href="/product/<%= product._id %>" class="product-link">
-                                    <div class="product-image">
-                                        <img src="<%= product.images[0] %>" alt="<%= product.name %>">
-                                        <button class="btn btn-link text-danger wishlist-btn" onclick="event.preventDefault(); addToWishlist('<%= product._id %>')">
-                                            <i class="bi bi-heart"></i>
+                                <div class="product-image">
+                                    <% if (user) { %>
+                                        <button type="button" class="btn btn-link wishlist-btn <%= product.inWishlist ? 'active' : '' %>" 
+                                                data-product-id="<%= product._id %>">
+                                            <i class="bi <%= product.inWishlist ? 'bi-heart-fill' : 'bi-heart' %>"></i>
                                         </button>
-                                    </div>
+                                    <% } %>
+                                    <a href="/product/<%= product._id %>" class="product-link">
+                                        <img src="<%= product.images[0] %>" alt="<%= product.name %>">
+                                    </a>
+                                </div>
+                                <a href="/product/<%= product._id %>" class="product-link">
                                     <div class="product-info">
                                         <h3 class="product-title"><%= product.name %></h3>
                                         <div class="product-category"><%= product.category.name %></div>
@@ -118,6 +123,7 @@
         </div>
     </section>
 
+
     <section class="py-5 newsletter">
         <div class="container text-center">
             <h2 class="mb-4" style="color: var(--primary-color)">Stay Updated</h2>
@@ -133,4 +139,5 @@
         </div>
     </section>
 
+   
     <%- include('../partials/footer', { pageJs: 'home' }) %>

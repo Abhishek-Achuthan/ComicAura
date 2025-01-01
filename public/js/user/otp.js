@@ -58,7 +58,6 @@ function startTimer() {
     }, 1000);
 }
 
-// the timer will start when the page reloads
 startTimer();
 
 verifyBtn.addEventListener('click', () => {

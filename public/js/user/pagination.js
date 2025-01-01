@@ -19,16 +19,13 @@ function initializePagination(totalItems, itemsPerPage, containerID, paginationI
     function renderPagination() {
         let html = '<div class="pagination-wrapper">';
         
-        // Previous button
         html += `<button class="page-btn ${currentPage === 1 ? 'disabled' : ''}" 
                  onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>
                  <i class="bi bi-chevron-left"></i>
                 </button>`;
 
-        // Current page indicator
         html += `<span class="page-info">${currentPage} / ${totalPages}</span>`;
 
-        // Next button
         html += `<button class="page-btn ${currentPage === totalPages ? 'disabled' : ''}" 
                  onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>
                  <i class="bi bi-chevron-right"></i>
@@ -44,6 +41,5 @@ function initializePagination(totalItems, itemsPerPage, containerID, paginationI
         showPage(currentPage);
     }
 
-    // Show first page initially
     showPage(1);
 }
