@@ -1,4 +1,3 @@
-// Make toggleWishlist available globally before DOMContentLoaded
 window.toggleWishlist = async function(productId, button) {
     try {
         const isInWishlist = button.classList.contains('active');
@@ -14,10 +13,10 @@ window.toggleWishlist = async function(productId, button) {
         });
 
         const data = await response.json();
+        console.log('Response Data:', data);
 
         if (!response.ok) {
             if (response.status === 401) {
-                // Redirect to login if not authenticated
                 window.location.href = '/login';
                 return;
             }
@@ -25,13 +24,11 @@ window.toggleWishlist = async function(productId, button) {
         }
 
         if (data.success) {
-            // Toggle button state
             button.classList.toggle('active');
             const icon = button.querySelector('i');
             icon.classList.toggle('bi-heart');
             icon.classList.toggle('bi-heart-fill');
 
-            // Show success message
             const Toast = Swal.mixin({
                 toast: true,
                 position: 'top-end',
@@ -132,118 +129,11 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    async function addToCart(productId, button) {
-        try {
-            const response = await fetch("/addToCart", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({ productId: productId })
-            });
-            
-            if(!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-
-            const data = await response.json();
-
-            if(data.success) {
-                // Show success message using SweetAlert2
-                const Toast = Swal.mixin({
-                    toast: true,
-                    position: 'top-end',
-                    showConfirmButton: false,
-                    timer: 3000,
-                    background: '#1a1a1a',
-                    color: '#fff'
-                });
-
-                Toast.fire({
-                    icon: 'success',
-                    title: 'Product added to cart successfully'
-                });
-                
-                updateCartCount();
-
-                // Update button to "Go to Cart"
-                button.innerHTML = '<i class="fas fa-shopping-cart"></i> Go to Cart';
-                button.classList.add('in-cart');
-                button.onclick = () => window.location.href = '/cart';
-            } else {
-                // Show error message
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: data.message || 'Failed to add product to cart',
-                    background: '#1a1a1a',
-                    color: '#fff'
-                });
-            }
-        } catch (error) {
-            console.error("Error adding to cart:", error);
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: 'An unexpected error occurred',
-                background: '#1a1a1a',
-                color: '#fff'
-            });
-        }
-    }
-
-    window.addToCart = addToCart;
-
-    function showToast(message, type = 'success') {
-        const Toast = Swal.mixin({
-            toast: true,
-            position: 'top-end',
-            showConfirmButton: false,
-            timer: 3000,
-            background: '#1a1a1a',
-            color: '#fff'
-        });
-
-        Toast.fire({
-            icon: type,
-            title: message
-        });
-    }
-
-    const addToCartButtons = document.querySelectorAll('.add-to-cart-btn:not(.in-cart)');
-    const cartCount = document.querySelector('.cart-count');
-    let count = 0;
-
-    addToCartButtons.forEach(button => {
-        button.addEventListener('click', (e) => {
-            e.preventDefault();
-            const productId = button.getAttribute('data-product-id');
-            if (productId) {
-                addToCart(productId, button);
-            }
-        });
-    });
-
-    // Add click event listeners to all wishlist buttons
-    document.querySelectorAll('.wishlist-btn').forEach(button => {
-        button.addEventListener('click', function(e) {
-            e.preventDefault(); // Prevent any parent link clicks
-            const productId = this.dataset.productId;
+    const wishlistButtons = document.querySelectorAll('.wishlist-btn');
+    wishlistButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const productId = this.getAttribute('data-product-id');
             window.toggleWishlist(productId, this);
         });
     });
-
-    async function updateCartCount() {
-        const cartCountElement = document.querySelector('.cart-count');
-        if (cartCountElement) {
-            fetch('/cart/count')
-                .then(response => response.json())
-                .then(data => {
-                    cartCountElement.textContent = data.count;
-                })
-                .catch(error => console.error('Error updating cart count:', error));
-        }
-    }
 });
-
-

@@ -1,0 +1,99 @@
+.offer-banner-container {
+    width: 100%;
+    background: linear-gradient(135deg, #ff6b6b, #ff8e8e);
+    color: white;
+    padding: 10px 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.offer-banner-wrapper {
+    max-width: 1200px;
+    margin: 0 auto;
+    position: relative;
+}
+
+.offer-banner {
+    display: flex;
+    gap: 20px;
+    animation: scrollBanner 30s linear infinite;
+    white-space: nowrap;
+}
+
+.offer-banner-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 5px 15px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.offer-category-name {
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.9em;
+}
+
+.offer-discount {
+    font-weight: bold;
+    color: #fff;
+    padding: 2px 8px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.offer-max-discount {
+    font-size: 0.8em;
+    opacity: 0.9;
+}
+
+.offer-timer {
+    font-size: 0.8em;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 2px 8px;
+    border-radius: 12px;
+}
+
+@keyframes scrollBanner {
+    0% {
+        transform: translateX(0);
+    }
+    100% {
+        transform: translateX(-50%);
+    }
+}
+
+/* Hover effect */
+.offer-banner-item:hover {
+    transform: scale(1.05);
+    transition: transform 0.3s ease;
+    background: rgba(255, 255, 255, 0.2);
+    cursor: pointer;
+}
+
+/* Notification styles */
+.offer-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: white;
+    padding: 15px 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    animation: slideIn 0.5s ease-out;
+    max-width: 300px;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}

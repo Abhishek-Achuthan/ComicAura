@@ -101,7 +101,7 @@
                         <% if (user) { %>
                             <a href="/profile">
                                 <i class="bi bi-person"></i>Profile</a>
-                            <a href="/orders">
+                            <a href="/order-history">
                                 <i class="bi bi-box-seam"></i>My Orders</a>
                             <a href="/wishlist">
                                 <i class="bi bi-heart"></i>Wishlist</a>
@@ -144,19 +144,35 @@
                                             </div>
                                             <div class="col-md-5">
                                                 <h5 class="product-name"><%= item.product.name %></h5>
-                                                <div class="price-container">
-                                                    <% if (item.product.salePrice < item.product.regularPrice) { %>
-                                                        <span class="regular-price">₹<%= item.product.regularPrice %></span>
+                                                <div class="price-container" 
+                                                    data-regular-price="<%= item.product.regularPrice %>" 
+                                                    data-sale-price="<%= item.product.salePrice %>">
+                                                    <% if (item.product.category && item.product.category.offer && item.product.category.offer.isActive) { %>
+                                                        <div class="offer-tag">
+                                                            <%= item.product.category.offer.discountType === 'percentage' ? 
+                                                                `${item.product.category.offer.discountValue}% OFF` : 
+                                                                `₹${item.product.category.offer.discountValue} OFF` %>
+                                                        </div>
+                                                        <span class="discounted-price">₹<%= item.totalPrice.toFixed(2) %></span>
+                                                        <span class="original-price">₹<%= (item.product.salePrice < item.product.regularPrice ? 
+                                                            item.totalSalePrice : item.totalRegularPrice).toFixed(2) %></span>
+                                                    <% } else if (item.product.salePrice < item.product.regularPrice) { %>
+                                                        <span class="sale-price">₹<%= item.totalSalePrice.toFixed(2) %></span>
+                                                        <span class="original-price">₹<%= item.totalRegularPrice.toFixed(2) %></span>
                                                     <% } else { %>
-                                                        <span class="regular-price">₹<%= item.product.regularPrice %></span>
+                                                        <span class="regular-price">₹<%= item.totalRegularPrice.toFixed(2) %></span>
                                                     <% } %>
                                                 </div>
                                             </div>
                                             <div class="col-md-3">
                                                 <div class="quantity-control">
-                                                    <button class="quantity-btn decrease" data-id="<%= item.product.productId %>">-</button>
-                                                    <input type="number" class="quantity-input" value="<%= item.quantity %>" min="1" readonly>
-                                                    <button class="quantity-btn increase" data-id="<%= item.product.productId %>">+</button>
+                                                    <button class="quantity-btn decrease" 
+                                                        data-action="decrease"
+                                                        data-product-id="<%= item.product.productId %>">-</button>
+                                                    <span class="quantity"><%= item.quantity %></span>
+                                                    <button class="quantity-btn increase" 
+                                                        data-action="increase"
+                                                        data-product-id="<%= item.product.productId %>">+</button>
                                                 </div>
                                             </div>
                                             <div class="col-md-1 text-end">
@@ -363,6 +379,7 @@
                             }
                             
                             toastr.success('Item removed from cart');
+                            window.location.reload();
                         } else {
                             toastr.error(data.message || 'Failed to remove item');
                         }
@@ -373,6 +390,12 @@
                 });
             });
 
+            function calculateTotal(){
+                const total = Array.from(document.querySelectorAll('.discounted-price')).reduce((total, element) => {
+                    return total + parseFloat(element.textContent.replace('₹', ''));
+                }, 0);
+
+            }
             // Server messages
             if (typeof serverMessages !== 'undefined') {
                 if (serverMessages.success) toastr.success(serverMessages.success);
@@ -412,6 +435,72 @@
                 link.addEventListener('click', () => {
                     if (navbarCollapse?.classList.contains('show')) {
                         navbarCollapse.classList.remove('show');
+                    }
+                });
+            });
+
+            // Add event listeners for quantity buttons
+            document.querySelectorAll('.quantity-btn').forEach(button => {
+                button.addEventListener('click', async function() {
+                    const prodId = this.dataset.productId;
+                    const action = this.dataset.action;
+                    const quantityElement = this.parentElement.querySelector('.quantity');
+
+                    try {
+                        const response = await fetch('/updateCartQuantity', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ prodId, action })
+                        });
+
+                        const data = await response.json();
+
+                        if (data.success) {
+                            // Update quantity display
+                            const currentQuantity = parseInt(quantityElement.textContent);
+                            quantityElement.textContent = action === 'increase' ? currentQuantity + 1 : currentQuantity - 1;
+
+                            // Update cart count
+                            const cartCountElement = document.querySelector('.cart-count');
+                            if (cartCountElement) {
+                                cartCountElement.textContent = data.cartCount;
+                            }
+
+                            // Update item total price
+                            const cartItem = this.closest('.cart-item');
+                            const priceContainer = cartItem.querySelector('.price-container');
+                            
+                            // Update discounted price if it exists
+                            const discountedPrice = priceContainer.querySelector('.discounted-price');
+                            if (discountedPrice) {
+                                discountedPrice.textContent = `₹${data.itemTotal.toFixed(2)}`;
+                            } else {
+                                // Update sale price or regular price
+                                const salePrice = priceContainer.querySelector('.sale-price');
+                                const regularPrice = priceContainer.querySelector('.regular-price');
+                                if (salePrice) {
+                                    salePrice.textContent = `₹${data.itemTotal.toFixed(2)}`;
+                                } else if (regularPrice) {
+                                    regularPrice.textContent = `₹${data.itemTotal.toFixed(2)}`;
+                                }
+                            }
+
+                            // Update cart totals
+                            document.getElementById('subtotal').textContent = `₹${data.itemSubtotal.toFixed(2)}`;
+                            document.getElementById('tax').textContent = `₹${data.tax.toFixed(2)}`;
+                            document.getElementById('total').textContent = `₹${data.total.toFixed(2)}`;
+
+                            if (data.toast) {
+                                showToast(data.toast.type, data.toast.message);
+                            }
+                        } else {
+                            showToast('error', data.message);
+                        }
+                    } catch (error) {
+                        console.error('Error:', error);
+                        showToast('error', 'Failed to update cart');
                     }
                 });
             });

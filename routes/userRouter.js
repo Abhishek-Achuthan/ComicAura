@@ -14,9 +14,9 @@ const couponController = require('../controllers/user/couponController');
 
 router.use(cartMiddleware);
 
-router.get("/", userController.loadHomepage);
-router.get("/home", userController.loadHomepage);
-router.get("/product/:id", userController.loadProductDetails);
+router.get("/",userAuth.isLoggedIn, userController.loadHomepage);
+router.get("/home", userAuth.isLoggedIn, userController.loadHomepage);
+router.get("/product/:id",userAuth.isLoggedIn, userController.loadProductDetails);
 
 router.get("/signup", userAuth.isLogin, userController.loadSignUp);
 router.post("/signup", userAuth.isLogin, userController.signUp);
@@ -32,8 +32,6 @@ router.post("/verify-reset-otp", userController.verifyResetOTP);
 router.post("/reset-password", userController.resetPassword);
 
 router.get("/profile", userAuth.isLoggedIn, profileController.loadProfile);
-router.get('/api/orders/:orderId', userAuth.isLoggedIn, profileController.getOrderDetails);
-router.get('/profile/orders', userAuth.isLoggedIn, profileController.getOrders);
 router.post("/profile/change-password", userAuth.isLoggedIn, profileController.changePassword);
 router.post("/profile/send-email-otp", userAuth.isLoggedIn, profileController.sendEmailChangeOTP);
 router.post("/profile/change-email", userAuth.isLoggedIn, profileController.changeEmail);
@@ -41,7 +39,7 @@ router.post("/addAddress", userAuth.isLoggedIn, profileController.addAddress);
 router.patch("/profile/:addressId", userAuth.isLoggedIn, profileController.updateAddress);
 router.delete("/address/:addressId", profileController.deleteAddress);
 
-router.get("/shop",shopController.loadShop)
+router.get("/shop",userAuth.isLoggedIn,shopController.loadShop)
 router.get("/shop/filter", shopController.filterProducts)
 
 router.get("/cart", userAuth.isLoggedIn, cartController.loadCart);
@@ -58,28 +56,26 @@ router.get('/order-success/:orderId',userAuth.isLoggedIn,checkoutController.getO
 router.post('/cancel-order/:orderId', userAuth.isLoggedIn, checkoutController.cancelOrder);
 router.get('/order-history', userAuth.isLoggedIn, checkoutController.getOrderHistory);
 
-// Order routes
 router.post('/orders', userAuth.isLoggedIn, orderController.createOrder);
 router.post('/orders/verify-payment', userAuth.isLoggedIn, orderController.verifyPayment);
 router.post('/orders/:orderId/cancel', userAuth.isLoggedIn, orderController.cancelOrder);
 router.post('/orders/:orderId/return', userAuth.isLoggedIn, orderController.returnOrder);
+router.post('/initiate-return/:orderId', userAuth.isLoggedIn, orderController.returnOrder);
 
-// Wishlist routes
 router.get('/wishlist', userAuth.isLoggedIn, wishlistController.getWishlist);
 router.post('/wishlist/add', userAuth.isLoggedIn, wishlistController.addToWishlist);
 router.post('/wishlist/remove', userAuth.isLoggedIn, wishlistController.removeFromWishlist);
 router.post('/wishlist/toggle/:productId', userAuth.isLoggedIn, wishlistController.toggleWishlist);
 
-// Wallet routes
+// Wallet 
 router.get('/wallet', userAuth.isLoggedIn, walletController.getWalletDetails);
 router.post('/wallet/add', userAuth.isLoggedIn, walletController.addMoney);
 router.post('/initiate-wallet-payment', userAuth.isLoggedIn, profileController.initiateWalletAddMoney);
 router.post('/verify-wallet-payment', userAuth.isLoggedIn, profileController.verifyWalletPayment);
 
-// Add this route for getting orders
 router.get('/orders', userAuth.isLoggedIn, profileController.getOrders);
 
-// Coupon Routes
+// Coupon 
 router.post('/apply-coupon', userAuth.isLoggedIn, couponController.applyCoupon);
 router.post('/remove-coupon', userAuth.isLoggedIn, couponController.removeCoupon);
 

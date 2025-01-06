@@ -6,6 +6,7 @@ const User = require('../../models/userSchema.js');
 const ReturnRequest = require('../../models/returnRequestModel');
 const mongoose = require('mongoose');
 const Product = require('../../models/productSchema');
+const { generateOrderId } = require('../../utils/orderUtils');
 
 async function clearCart(userId) {
     const cart = await Cart.findOne({ user: userId });
@@ -62,22 +63,52 @@ const orderController = {
 
             // Create order items from cart
             const orderItems = cart.items.map(item => ({
-                product: item.product._id,
+                productId: item.product._id,
                 quantity: item.quantity,
-                price: item.product.price,
-                discountedPrice: item.product.discountedPrice
+                price: item.product.discountedPrice || item.product.price
             }));
 
             // Calculate totals
-            const totalAmount = cart.total;
+            const subTotal = cart.items.reduce((total, item) => {
+                return total + (item.quantity * (item.product.discountedPrice || item.product.price));
+            }, 0);
+            const taxRate = 0.18; // 18% GST
+            const taxAmount = subTotal * taxRate;
+            const totalAmount = subTotal + taxAmount;
 
-            // Create order
+            // Get shipping address details
+            const userId = await User.findById(req.session.userId);
+            const user = await User.findById(userId);
+            const shippingAddress = user.addresses.find(addr => addr._id.toString() === addressId);
+
+            if (!shippingAddress) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Invalid shipping address'
+                });
+            }
+
+            const orderId = generateOrderId();
+
             const order = await Order.create({
-                user: req.user._id,
+                orderId,
+              user,
                 items: orderItems,
+                shippingAddress: {
+                    name: shippingAddress.name,
+                    addressType: shippingAddress.addressType,
+                    street: shippingAddress.street,
+                    city: shippingAddress.city,
+                    state: shippingAddress.state,
+                    country: shippingAddress.country,
+                    pinCode: shippingAddress.pinCode,
+                    phoneNumber: shippingAddress.phoneNumber
+                },
+                subTotal,
+                taxAmount,
                 totalAmount,
-                shippingAddress: addressId,
                 paymentMethod,
+                orderDate: new Date(),
                 couponApplied: cart.couponApplied,
                 couponDiscount: cart.couponDiscount
             });
@@ -85,12 +116,12 @@ const orderController = {
             if (paymentMethod === 'razorpay') {
                 const razorpayOrder = await paymentService.createRazorpayOrder(
                     totalAmount,
-                    order._id.toString()
+                    order.orderId.toString()
                 );
 
                 return res.json({
                     success: true,
-                    orderId: order._id,
+                    orderId: order.orderId,
                     order: razorpayOrder
                 });
             } else if (paymentMethod === 'wallet') {
@@ -107,8 +138,8 @@ const orderController = {
                 wallet.transactions.push({
                     type: 'DEBIT',
                     amount: totalAmount,
-                    description: `Payment for order #${order._id}`,
-                    orderId: order._id
+                    description: `Payment for order #${order.orderId}`,
+                    orderId: order.orderId
                 });
                 await wallet.save();
 
@@ -121,7 +152,7 @@ const orderController = {
             
             res.json({ 
                 success: true, 
-                orderId: order._id,
+                orderId: order.orderId,
                 order: {
                     amount: totalAmount
                 }
@@ -190,10 +221,11 @@ const orderController = {
         try {
             const userId = req.session.userId;
             const { orderId } = req.params;
+            const user = await User.findById(userId)
             
             const order = await Order.findOne({ 
                 _id: orderId,
-                userId: userId
+                user,
             }).populate('items.productId');
 
             if (!order) {
@@ -231,7 +263,7 @@ const orderController = {
                             transactions: [{
                                 type: 'CREDIT',
                                 amount: refundAmount,
-                                description: `Refund for cancelled order #${order._id}`,
+                                description: `Refund for cancelled order ${order.orderId}`,
                                 orderId: order._id
                             }]
                         });
@@ -241,29 +273,28 @@ const orderController = {
                         wallet.transactions.push({
                             type: 'CREDIT',
                             amount: refundAmount,
-                            description: `Refund for cancelled order #${order._id}`,
+                            description: `Refund for cancelled order ${order.orderId}`,
                             orderId: order._id
                         });
                         await wallet.save();
                     }
-
                     order.paymentStatus = 'Refunded';
-                    
-                    // Update refund details in order
-                    order.refundDetails = {
-                        amount: refundAmount,
-                        status: 'completed',
-                        processedAt: new Date(),
-                        method: 'wallet'
-                    };
+                }
 
-                    // Return items to stock
-                    for (const item of order.items) {
-                        await Product.findByIdAndUpdate(
-                            item.productId,
-                            { $inc: { stock: item.quantity } }
-                        );
-                    }
+                // Update refund details in order
+                order.refundDetails = {
+                    amount: refundAmount,
+                    status: 'completed',
+                    processedAt: new Date(),
+                    method: 'wallet'
+                };
+
+                // Return items to stock
+                for (const item of order.items) {
+                    await Product.findByIdAndUpdate(
+                        item.productId,
+                        { $inc: { stock: item.quantity } }
+                    );
                 }
             }
 
@@ -289,14 +320,20 @@ const orderController = {
         }
     },
 
-    // Return order request
     returnOrder: async (req, res) => {
         try {
             const { orderId } = req.params;
             const { reason } = req.body;
             const userId = req.session.userId;
 
-            // Find the order by ID and user ID
+            // Validate reason
+            if (!reason || reason.trim().length === 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Return reason is required'
+                });
+            }
+
             const order = await Order.findOne({ 
                 _id: orderId,
                 userId: userId
@@ -323,7 +360,6 @@ const orderController = {
                 });
             }
 
-            // Check return window (7 days)
             const deliveryDate = new Date(order.deliveryDate || order.orderDate);
             const daysSinceDelivery = Math.floor((Date.now() - deliveryDate) / (1000 * 60 * 60 * 24));
             
@@ -345,11 +381,12 @@ const orderController = {
 
             await returnRequest.save();
 
-            // Update order status to return requested
+            // Update order status
             order.returnRequested = true;
             order.returnRequestDate = new Date();
             await order.save();
 
+            // Send success response
             res.json({ 
                 success: true, 
                 message: 'Return request submitted successfully' 

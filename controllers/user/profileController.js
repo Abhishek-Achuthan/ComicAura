@@ -28,53 +28,42 @@ const loadProfile = async (req, res) => {
             return res.redirect('/login');
         }
 
-        const page = parseInt(req.query.page) || 1;
-        const limit = 10;
-        const skip = (page - 1) * limit;
-
         const wallet = await Wallet.findOne({user: userId}) || { balance: 0, transactions: [] };
         const addresses = await Address.findOne({userId}) || { address: [] };
         const wishlist = await Wishlist.findOne({ user: userId }).populate('products');
-        
         const totalOrders = await Order.countDocuments({ userId });
-        const totalPages = Math.ceil(totalOrders / limit);
         
-        const orders = await Order.find({ userId })
-            .populate({
-                path: 'items.productId',
-                model: 'Product',
-                select: 'name price'  
-            })
-            .sort({ orderDate: -1 })
-            .skip(skip)
-            .limit(limit);
-
-        const processedOrders = orders.map(order => ({
-            ...order.toObject(),
-            _id: order._id.toString()
-        }));
-
+        const userObj = user.toObject();
+        userObj.orderCount = totalOrders;
+        userObj.wishlistCount = wishlist ? wishlist.products.length : 0;
+        
         return res.render('profile', {
             title: "User Profile",
-            user,
+            user: userObj,
             wallet,
-            addresses,  
-            wishlist: wishlist ? wishlist.products : [],
-            orders: processedOrders,
-            currentPage: page,
-            totalPages,
-            error: null
+            addresses,
+            wishlist,
+            success: req.session.success,
+            error: req.session.error
         });
+
+        delete req.session.success;
+        delete req.session.error;
+
     } catch (error) {
         console.error('Error in loadProfile:', error);
-        res.status(500).render('error', { message: 'Internal server error' });
+        res.status(500).render('error', { 
+            message: 'Error loading profile', 
+            error 
+        });
     }
-}
+};
 
 const addAddress = async (req,res) => {
     try {
         const address = req.body;
         const userId = req.session.userId;
+        console.log(address)
 
         if(!address) {
             return res.status(400).json({
@@ -93,8 +82,8 @@ const addAddress = async (req,res) => {
         }
 
         const newAddress = {
-            name: address.fullName,
-            phoneNumber: address.phone,
+            name: address.name,
+            phoneNumber: address.phoneNumber,
             country: address.country,
             street: address.street,
             state: address.state,
@@ -135,13 +124,11 @@ const addAddress = async (req,res) => {
      }
  }
 
- const updateAddress = async (req,res) => {
+ const updateAddress = async (req, res) => {
     try {
         const userId = req.session.userId;
         const addressId = req.params.addressId;
         const editedAddress = req.body;
-
-        console.log('Edited address data:', editedAddress);
 
         const userAddress = await Address.findOne({ userId: userId });
         if (!userAddress) {
@@ -160,8 +147,8 @@ const addAddress = async (req,res) => {
         }
 
         Object.assign(address, {
-            name: editedAddress.name || editedAddress.fullName, // Try both field names
-            phoneNumber: editedAddress.phoneNumber || editedAddress.phone, // Try both field names
+            name: editedAddress.name || editedAddress.fullName, 
+            phoneNumber: editedAddress.phoneNumber || editedAddress.phone, 
             street: editedAddress.street,
             city: editedAddress.city,
             state: editedAddress.state,
@@ -588,13 +575,14 @@ const getOrders = async (req, res) => {
         const totalOrders = await Order.countDocuments({ userId });
         const totalPages = Math.ceil(totalOrders / limit);
 
-        // Fetch paginated orders
+        // Fetch paginated orders with all necessary fields
         const orders = await Order.find({ userId })
             .populate({
                 path: 'items.productId',
                 model: 'Product',
                 select: 'name images price'
             })
+            .select('orderId items orderDate orderStatus returnStatus returnReason rejectionReason isReturned returnRequested deliveryDate paymentMethod totalAmount')
             .sort({ orderDate: -1 })
             .skip(skip)
             .limit(limit);
@@ -657,7 +645,6 @@ const getOrderDetails = async (req, res) => {
 
 module.exports = {
     loadProfile,
-    getOrders,
     addAddress,
     updateAddress,
     deleteAddress,
@@ -669,5 +656,6 @@ module.exports = {
     addToWishlist,
     removeFromWishlist,
     getWishlist,
-    getOrderDetails
-};
+    getOrderDetails,
+    getOrders 
+};  

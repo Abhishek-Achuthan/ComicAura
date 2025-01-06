@@ -1,6 +1,8 @@
 <%- include('../partials/header') %>
 <link rel="stylesheet" href="/css/user/payment.css">
+<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 
 <style>
     .payment-methods {
@@ -11,12 +13,13 @@
     }
 
     .payment-method {
-        background-color: #ffffff;
+        background-color: #000000;
         margin-bottom: 1rem;
         padding: 1rem;
         border-radius: 8px;
         transition: all 0.2s ease;
-        border: 1px solid #e0e0e0;
+        color: white;
+        border: 1px solid transparent;
     }
 
     .payment-method:last-child {
@@ -24,19 +27,26 @@
     }
 
     .payment-method:hover {
+        background-color: #ffffff;
         border-color: #ff6b00;
         transform: translateY(-1px);
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     }
 
+    .payment-method:hover label,
+    .payment-method:hover i {
+        color: #000000;
+    }
+
     .payment-method label {
-        color: #1a1a1a;
+        color: inherit;
         font-weight: 500;
         cursor: pointer;
         width: 100%;
         margin-bottom: 0;
         display: flex;
         align-items: center;
+        transition: color 0.2s ease;
     }
 
     .payment-method input[type="radio"] {
@@ -45,15 +55,12 @@
     }
 
     .payment-method i {
-        color: #ff6b00;
-        font-size: 1.1rem;
-        margin-right: 12px;
-        width: 20px;
-        text-align: center;
+        color: inherit;
+        transition: color 0.2s ease;
     }
 
     .section-title {
-        color: #1a1a1a;
+        color: white;
         font-weight: 600;
         font-size: 1.1rem;
     }
@@ -107,6 +114,9 @@
             <div class="mb-4">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h4 class="section-title m-0">Delivery Address</h4>
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAddressModal">
+                        <i class="fas fa-plus me-1"></i> Add New Address
+                    </button>
                 </div>
                 
                 <div class="address-selector">
@@ -129,14 +139,12 @@
                         </div>
                         <!-- Hidden input for selected address -->
                         <input type="hidden" name="selectedAddress" value="<%= addresses[0]._id %>">
+                    <% } else { %>
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>No addresses found. Please add a delivery address.
+                        </div>
                     <% } %>
                 </div>
-                
-                <% if (!addresses || addresses.length === 0) { %>
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle me-2"></i>No addresses found. Please add a delivery address.
-                    </div>
-                <% } %>
             </div>
 
             <!-- Payment Method Section -->
@@ -176,7 +184,7 @@
                             <img src="<%= item.product.image %>" alt="<%= item.product.name %>" class="cart-item-image">
                             <div class="cart-item-details flex-grow-1">
                                 <h5><%= item.product.name %></h5>
-                                <p class="text-muted mb-2">Quantity: <%= item.quantity %></p>
+                                <p class="text-white mb-2">Quantity: <%= item.quantity %></p>
                                 <p class="price mb-0">₹<%= item.product.price * item.quantity %></p>
                             </div>
                         </div>
@@ -193,11 +201,17 @@
                 <!-- Coupon Section -->
                 <div class="coupon-section mb-3">
                     <div class="input-group">
-                        <input type="text" class="form-control" id="couponCode" placeholder="Enter coupon code">
-                        <button class="btn btn-primary" id="applyCouponBtn">
+                        <input type="text" class="form-control" id="couponCode" 
+                            value="<%= cart.coupon ? cart.coupon.code : '' %>" 
+                            placeholder="Enter coupon code"
+                            <%= cart.coupon ? 'disabled' : '' %>>
+                        <button class="btn btn-primary" id="applyCouponBtn" <%= cart.coupon ? 'disabled' : '' %>>
                             <i class="fas fa-tag me-1"></i>Apply
                         </button>
                     </div>
+                    <button type="button" class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#couponsModal">
+                        <i class="fas fa-tag me-2"></i>View Available Coupons
+                    </button>
                     <div id="couponMessage" class="mt-2 small"></div>
                 </div>
 
@@ -208,17 +222,15 @@
                     </div>
                     
                     <!-- Coupon Discount -->
-                    <% if (cart.coupon && cart.coupon.discountAmount > 0) { %>
-                    <div class="summary-item discount-row">
-                        <span>
-                            Discount (<%= cart.coupon.code %>)
-                            <button class="btn btn-link btn-sm text-danger p-0 ms-2 remove-coupon">
+                    <div class="summary-item discount-row" style="display: <%= cart.coupon && cart.coupon.discountAmount > 0 ? 'flex' : 'none' %>;">
+                        <span class="summary-label">
+                            Discount <%= cart.coupon ? `(${cart.coupon.code})` : '' %>
+                            <button onclick="removeCoupon()" class="btn btn-link btn-sm text-danger p-0 ms-2">
                                 <i class="fas fa-times"></i>
                             </button>
                         </span>
-                        <span class="text-success">-₹<%= (cart.coupon.discountAmount || 0).toFixed(2) %></span>
+                        <span class="summary-value text-success">-₹<%= ((cart.coupon && cart.coupon.discountAmount) || 0).toFixed(2) %></span>
                     </div>
-                    <% } %>
 
                     <div class="summary-item">
                         <span>Shipping</span>
@@ -251,50 +263,47 @@
 </div>
 
 <!-- Address List Modal -->
-<div class="modal fade" id="addressListModal" tabindex="-1" aria-labelledby="addressListModalLabel" aria-hidden="true">
+<div class="modal fade" id="addressListModal" tabindex="-1" aria-labelledby="addressListModalLabel" aria-hidden="true" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
+        <div class="modal-content bg-dark text-white">
+            <div class="modal-header border-secondary">
                 <h5 class="modal-title" id="addressListModalLabel">Select Delivery Address</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <% if (addresses && addresses.length > 0) { %>
                     <div class="address-list">
                         <% addresses.forEach(address => { %>
-                            <div class="address-option" data-address-id="<%= address._id %>">
-                                <div class="address-details">
-                                    <h5><%= address.name %></h5>
-                                    <p><%= address.street %></p>
-                                    <p><%= address.city %>, <%= address.state %> <%= address.pinCode %></p>
-                                    <p class="mb-0"><i class="fas fa-phone"></i> <%= address.phoneNumber %></p>
-                                </div>
-                                <div class="address-actions">
-                                    <button class="btn btn-sm btn-primary edit-address" onclick="editModal('<%= address._id %>')">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <button class="btn btn-sm btn-danger delete-address" onclick="deleteAddress('<%= address._id %>')">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
+                            <div class="address-item mb-3 p-3 border border-secondary rounded">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h6 class="mb-1"><%= address.name %></h6>
+                                        <p class="mb-1"><%= address.street %></p>
+                                        <p class="mb-1"><%= address.city %>, <%= address.state %> <%= address.pinCode %></p>
+                                        <p class="mb-0"><i class="fas fa-phone"></i> <%= address.phoneNumber %></p>
+                                    </div>
+                                    <div class="d-flex flex-column">
+                                        <button type="button" class="btn btn-outline-primary btn-sm mb-2" 
+                                                onclick="selectAddress('<%= address._id %>')">
+                                            Select
+                                        </button>
+                                        <button type="button" class="btn btn-outline-warning btn-sm" 
+                                                onclick="editAddress('<%= address._id %>')">
+                                            Edit
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         <% }); %>
                     </div>
                 <% } %>
-                <button type="button" class="btn btn-primary mt-3" data-bs-toggle="modal" data-bs-target="#addAddressModal">
-                    <i class="fas fa-plus"></i> Add New Address
-                </button>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" onclick="selectAddress()">Select Address</button>
             </div>
         </div>
     </div>
 </div>
 
 <!-- Add Address Modal -->
-<div class="modal fade" id="addAddressModal" tabindex="-1" aria-labelledby="addAddressModalLabel" aria-hidden="true">
+<div class="modal fade" id="addAddressModal" tabindex="-1" aria-labelledby="addAddressModalLabel" aria-hidden="true" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
@@ -351,7 +360,7 @@
 </div>
 
 <!-- Edit Address Modal -->
-<div class="modal fade" id="editAddressModal" tabindex="-1" aria-labelledby="editAddressModalLabel" aria-hidden="true">
+<div class="modal fade" id="editAddressModal" tabindex="-1" aria-labelledby="editAddressModalLabel" aria-hidden="true" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
@@ -408,12 +417,75 @@
     </div>
 </div>
 
+<!-- Coupons Modal -->
+<div class="modal fade" id="couponsModal" tabindex="-1" aria-labelledby="couponsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark text-light">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title" id="couponsModalLabel">Available Coupons</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <% if (availableCoupons && availableCoupons.length > 0) { %>
+                    <div class="coupon-list">
+                        <% availableCoupons.forEach(coupon => { %>
+                            <div class="coupon-card mb-3 p-3 border border-secondary rounded">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h5 class="text-info mb-2"><%= coupon.code %></h5>
+                                        <p class="mb-2"><%= coupon.description %></p>
+                                        <div class="discount-details">
+                                            <span class="badge bg-info mb-2">
+                                                <% if (coupon.discountType === 'percentage') { %>
+                                                    <%= coupon.discountAmount %>% OFF
+                                                    <% if (coupon.maxDiscountAmount) { %>
+                                                        (Max ₹<%= coupon.maxDiscountAmount %>)
+                                                    <% } %>
+                                                <% } else { %>
+                                                    ₹<%= coupon.discountAmount %> OFF
+                                                <% } %>
+                                            </span>
+                                        </div>
+                                        <% if (coupon.minimumPurchase) { %>
+                                            <small class="text-muted d-block">
+                                                Min. Purchase: ₹<%= coupon.minimumPurchase %>
+                                            </small>
+                                        <% } %>
+                                    </div>
+                                    <button class="btn btn-outline-info btn-sm" 
+                                            onclick="applyCoupon('<%= coupon.code %>')"
+                                            data-bs-dismiss="modal">
+                                        Apply
+                                    </button>
+                                </div>
+                            </div>
+                        <% }); %>
+                    </div>
+                <% } else { %>
+                    <div class="text-center py-4">
+                        <i class="fas fa-ticket-alt fa-3x mb-3 text-muted"></i>
+                        <p class="text-muted">No coupons available at the moment</p>
+                    </div>
+                <% } %>
+            </div>
+        </div>
+    </div>
+</div>
+
 <%- include('../partials/footer') %>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="/js/user/checkout.js" defer></script>
 
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize all modals
+    const modals = document.querySelectorAll('.modal');
+    modals.forEach(modal => {
+        new bootstrap.Modal(modal);
+    });
+});
+
     // Make addresses available to the JavaScript
     const addresses = <%- JSON.stringify(addresses) %>;
     

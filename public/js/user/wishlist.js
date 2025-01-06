@@ -1,53 +1,71 @@
-async function toggleWishlist(productId, button) {
+
+window.toggleWishlist = async function(productId, button) {
     try {
-        const response = await fetch(`/wishlist/toggle/${productId}`, {
+        // Debug: Initial state
+        console.log('Initial button state:', {
+            isActive: button.classList.contains('active'),
+            buttonClasses: button.className,
+            iconClasses: button.querySelector('i').className
+        });
+
+        const isInWishlist = button.classList.contains('active');
+        const endpoint = isInWishlist ? '/wishlist/remove' : '/wishlist/add';
+
+        const response = await fetch(endpoint, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
-            }
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ productId })
         });
 
         const data = await response.json();
+        console.log('Server Response:', data);  // Debug: Server response
+
+        if (!response.ok) {
+            if (response.status === 401) {
+                window.location.href = '/login';
+                return;
+            }
+            throw new Error(data.message || 'Failed to update wishlist');
+        }
 
         if (data.success) {
-            button.classList.toggle('in-wishlist');
+            button.classList.toggle('active');
+            const icon = button.querySelector('i');
             
-            // Show toast notification
-            const toastMessage = button.classList.contains('in-wishlist') 
-                ? 'Added to wishlist!' 
-                : 'Removed from wishlist!';
-            
-            showToast(toastMessage, button.classList.contains('in-wishlist') ? 'success' : 'info');
+            if (button.classList.contains('active')) {
+                icon.className = 'fas fa-heart'; // Solid filled heart
+            } else {
+                icon.className = 'far fa-heart'; // Regular outlined heart
+            }
+
+
+            const Toast = Swal.mixin({
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 3000,
+                background: '#1a1a1a',
+                color: '#fff'
+            });
+
+            Toast.fire({
+                icon: 'success',
+                title: isInWishlist ? 'Removed from wishlist' : 'Added to wishlist'
+            });
         } else {
-            showToast('Failed to update wishlist', 'error');
+            throw new Error(data.message || 'Failed to update wishlist');
         }
     } catch (error) {
-        console.error('Error toggling wishlist:', error);
-        showToast('Failed to update wishlist', 'error');
+        console.error('Error updating wishlist:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: error.message || 'Failed to update wishlist',
+            background: '#1a1a1a',
+            color: '#fff'
+        });
     }
-}
-
-function showToast(message, type = 'success') {
-    const toast = document.createElement('div');
-    toast.className = `toast toast-${type} animate__animated animate__fadeIn`;
-    toast.innerHTML = `
-        <div class="toast-content">
-            <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-times-circle' : 'fa-info-circle'}"></i>
-            <span>${message}</span>
-        </div>
-    `;
-    
-    document.body.appendChild(toast);
-    
-    // Trigger reflow for animation
-    toast.offsetHeight;
-    
-    // Add fade out animation after a delay
-    setTimeout(() => {
-        toast.classList.remove('animate__fadeIn');
-        toast.classList.add('animate__fadeOut');
-        setTimeout(() => {
-            toast.remove();
-        }, 300);
-    }, 2000);
-}
+};

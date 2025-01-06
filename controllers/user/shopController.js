@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Product = require("../../models/productSchema.js");
 const Category = require("../../models/categoryModel.js");
 const User = require("../../models/userSchema.js");
@@ -7,231 +8,94 @@ const Wishlist = require("../../models/wishlistModel.js");
 const loadShop = async (req, res) => {
     try {
         const userId = req.session.userId;
-        let cartItems = [];
-        let wishlistItems = [];
+        const page = parseInt(req.query.page) || 1;
+        const limit = 6;
+        const skip = (page - 1) * limit;
 
-        if (userId) {
-            const cart = await Cart.findOne({ userId });
-            if (cart) {
-                cartItems = cart.items.map(item => item.productId.toString());
-            }
+        const query = buildFilterQuery(req.query);
+        const sortOptions = getSortOptions(req.query.sort);
 
-            const wishlist = await Wishlist.findOne({ userId });
-            if (wishlist) {
-                wishlistItems = wishlist.items.map(item => item.toString());
-            }
-        }
+        const [cartItems, wishlistItems] = await Promise.all([
+            getCartItems(userId),
+            getWishlistItems(userId)
+        ]);
 
-        const products = await Product.find({ isBlocked: false })
-            .populate('category')
-            .lean();
+        const [products, totalProducts, categories] = await Promise.all([
+            Product.find(query)
+                .populate('category')
+                .sort(sortOptions)
+                .skip(skip)
+                .limit(limit)
+                .lean(),
+            Product.countDocuments(query),
+            Category.find({ isActive: true, isDeleted: false })
+        ]);
 
-        const categories = await Category.find({
-            isActive: true,
-            isDeleted: false
-        }).lean();
-
-        const transformedProducts = products.map(product => ({
-            ...product,
-            price: product.salePrice || product.regularPrice,
-            averageRating: 5,
-            inCart: cartItems.includes(product._id.toString()),
-            inWishlist: wishlistItems.includes(product._id.toString())
-        }));
-
+        const totalPages = Math.ceil(totalProducts / limit);
+        const processedCategories = processCategories(categories);
+        const transformedProducts = transformProducts(products, cartItems, wishlistItems);
         const user = await User.findById(userId);
-
         res.render('shop', {
+            user,
             products: transformedProducts,
-            categories,
-            user
+            categories: processedCategories,
+            currentPage: page,
+            totalPages,
+            totalProducts,
+            hasPreviousPage: page > 1,
+            hasNextPage: page < totalPages,
+            previousPage: page - 1,
+            nextPage: page + 1,
+            query: req.query
         });
     } catch (error) {
         console.error('Error in loadShop:', error);
-        res.status(500).render('error', { 
-            message: 'Failed to load shop page' 
-        });
+        res.status(500).render('error', { message: 'Internal server error' });
     }
 };
 
 const filterProducts = async (req, res) => {
     try {
+        const userId = req.session.userId;
         const page = parseInt(req.query.page) || 1;
-        const limit = 12;
+        const limit = 6;
         const skip = (page - 1) * limit;
 
-        // Base query for non-blocked products
-        let matchQuery = { isBlocked: false };
+        const query = buildFilterQuery(req.query);
+        const sortOptions = getSortOptions(req.query.sort);
 
-        // Get cart items for the logged-in user
-        let cartItems = [];
-        let wishlistItems = [];
-        if (req.session.userId) {
-            const cart = await Cart.findOne({ userId: req.session.userId });
-            if (cart) {
-                cartItems = cart.items.map(item => item.productId.toString());
-            }
-
-            const wishlist = await Wishlist.findOne({ userId: req.session.userId });
-            if (wishlist) {
-                wishlistItems = wishlist.items.map(item => item.toString());
-            }
-        }
-
-        // Search filter - match products that start with the search term
-        if (req.query.search) {
-            const searchTerm = req.query.search.trim().replace(/\s+/g, ' ');
-            if (searchTerm) {
-                // Create a regex that matches from the start of the name
-                matchQuery.name = new RegExp(`^${searchTerm}`, 'i');
-            }
-        }
-
-        // Category filter
-        if (req.query.category && req.query.category !== 'all') {
-            matchQuery.category = new mongoose.Types.ObjectId(req.query.category);
-        }
-
-        // Price range filter
-        if (req.query.minPrice || req.query.maxPrice) {
-            const priceFilter = {};
-            if (req.query.minPrice) {
-                priceFilter.$gte = parseFloat(req.query.minPrice);
-            }
-            if (req.query.maxPrice) {
-                priceFilter.$lte = parseFloat(req.query.maxPrice);
-            }
-            matchQuery.$or = [
-                { salePrice: { ...priceFilter, $ne: null, $gt: 0 } },
-                { 
-                    $and: [
-                        { $or: [{ salePrice: null }, { salePrice: 0 }] },
-                        { regularPrice: priceFilter }
-                    ]
-                }
-            ];
-        }
-
-        // Rating filter
-        if (req.query.rating && req.query.rating !== 'all') {
-            matchQuery.averageRating = { $gte: parseFloat(req.query.rating) };
-        }
-
-        // Create aggregation pipeline
-        let aggregationPipeline = [
-            { $match: matchQuery },
-            {
-                $addFields: {
-                    effectivePrice: {
-                        $cond: {
-                            if: { 
-                                $and: [
-                                    { $ne: ["$salePrice", null] },
-                                    { $gt: ["$salePrice", 0] }
-                                ]
-                            },
-                            then: "$salePrice",
-                            else: "$regularPrice"
-                        }
-                    }
-                }
-            }
-        ];
-
-        // Apply sorting
-        if (req.query.sort) {
-            switch (req.query.sort) {
-                case 'price-low':
-                    aggregationPipeline.push({ $sort: { effectivePrice: 1 } });
-                    break;
-                case 'price-high':
-                    aggregationPipeline.push({ $sort: { effectivePrice: -1 } });
-                    break;
-                case 'newest':
-                    aggregationPipeline.push({ $sort: { createdAt: -1 } });
-                    break;
-                case 'rating':
-                    aggregationPipeline.push({ $sort: { averageRating: -1 } });
-                    break;
-                case 'name-asc':
-                    aggregationPipeline.push({ $sort: { name: 1 } });
-                    break;
-                case 'name-desc':
-                    aggregationPipeline.push({ $sort: { name: -1 } });
-                    break;
-                default:
-                    aggregationPipeline.push({ $sort: { createdAt: -1 } });
-            }
-        } else {
-            aggregationPipeline.push({ $sort: { createdAt: -1 } });
-        }
-
-        // Add lookup for category
-        aggregationPipeline.push({
-            $lookup: {
-                from: 'categories',
-                localField: 'category',
-                foreignField: '_id',
-                as: 'category'
-            }
-        });
-
-        // Unwind category array
-        aggregationPipeline.push({
-            $unwind: {
-                path: '$category',
-                preserveNullAndEmptyArrays: true
-            }
-        });
-
-        // Get total count before pagination
-        const totalCount = await Product.aggregate([
-            { $match: matchQuery },
-            { $count: 'total' }
+        const [cartItems, wishlistItems] = await Promise.all([
+            getCartItems(userId),
+            getWishlistItems(userId)
         ]);
 
-        const total = totalCount.length > 0 ? totalCount[0].total : 0;
+        const [products, totalProducts] = await Promise.all([
+            Product.find(query)
+                .populate('category')
+                .sort(sortOptions)
+                .skip(skip)
+                .limit(limit)
+                .lean(),
+            Product.countDocuments(query)
+        ]);
 
-        // Add pagination
-        aggregationPipeline.push(
-            { $skip: skip },
-            { $limit: limit }
-        );
+        const totalPages = Math.ceil(totalProducts / limit);
+        const transformedProducts = transformProducts(products, cartItems, wishlistItems);
 
-        // Execute aggregation
-        let products = await Product.aggregate(aggregationPipeline);
-
-        // Transform products for response
-        products = products.map(product => ({
-            ...product,
-            price: product.effectivePrice,
-            inCart: cartItems.includes(product._id.toString()),
-            inWishlist: wishlistItems.includes(product._id.toString())
-        }));
-
-        // Send response
         res.json({
             success: true,
-            products,
-            total,
+            products: transformedProducts,
             currentPage: page,
-            totalPages: Math.ceil(total / limit),
-            filters: {
-                search: req.query.search || '',
-                category: req.query.category || 'all',
-                minPrice: req.query.minPrice || '',
-                maxPrice: req.query.maxPrice || '',
-                rating: req.query.rating || 'all',
-                sort: req.query.sort || 'newest'
-            }
+            totalPages,
+            totalProducts,
+            hasPreviousPage: page > 1,
+            hasNextPage: page < totalPages,
+            previousPage: page - 1,
+            nextPage: page + 1
         });
     } catch (error) {
         console.error('Error in filterProducts:', error);
-        res.status(500).json({ 
-            success: false, 
-            error: 'Failed to filter products',
-            message: error.message 
-        });
+        res.status(500).json({ success: false, message: 'Internal server error' });
     }
 };
 
@@ -265,9 +129,9 @@ const loadProductDetail = async (req, res) => {
         const userId = req.session.userId;
         let wishlistItems = [];
         if (userId) {
-            const wishlist = await Wishlist.findOne({ userId });
+            const wishlist = await Wishlist.findOne({ user: req.session.userId });
             if (wishlist) {
-                wishlistItems = wishlist.items.map(item => item.toString());
+                wishlistItems = wishlist.products.map(item => item.toString());
             }
         }
 
@@ -304,6 +168,123 @@ const loadProductDetail = async (req, res) => {
         });
     }
 };
+
+function buildFilterQuery(queryParams) {
+    const query = { isBlocked: false };
+
+    if (queryParams.search) {
+        query.$or = [
+            { name: { $regex: queryParams.search, $options: 'i' } },
+            { description: { $regex: queryParams.search, $options: 'i' } }
+        ];
+    }
+
+    if (queryParams.category && queryParams.category !== 'all') {
+        query.category = queryParams.category;
+    }
+
+    if (queryParams.rating && queryParams.rating !== 'all') {
+        query.averageRating = { $gte: parseInt(queryParams.rating) };
+    }
+
+    if (queryParams.minPrice || queryParams.maxPrice) {
+        query.regularPrice = {};
+        if (queryParams.minPrice) query.regularPrice.$gte = parseFloat(queryParams.minPrice);
+        if (queryParams.maxPrice) query.regularPrice.$lte = parseFloat(queryParams.maxPrice);
+    }
+
+    return query;
+}
+
+function getSortOptions(sortType) {
+    switch (sortType) {
+        case 'price-low':
+            return { salePrice: 1 };
+        case 'price-high':
+            return { salePrice: -1 };
+        case 'rating':
+            return { averageRating: -1 };
+        case 'oldest':
+            return { createdAt: 1 };
+        case 'newest':
+            return { createdAt: -1 };
+        case 'name-asc' :
+            return {name: 1};
+        case 'name-desc' :
+            return {name: -1};
+        default:
+            return { createdAt: -1 };
+    }
+}
+
+async function getCartItems(userId) {
+    if (!userId) return [];
+    const cart = await Cart.findOne({ userId });
+    return cart ? cart.items.map(item => item.productId.toString()) : [];
+}
+
+async function getWishlistItems(userId) {
+    if (!userId) return [];
+    const wishlist = await Wishlist.findOne({ user: userId });
+    return wishlist ? wishlist.products.map(item => item.toString()) : [];
+}
+
+function processCategories(categories) {
+    return categories.map(category => {
+        const categoryObj = category.toObject();
+        const currentOffer = category.currentOffer;
+        
+        if (currentOffer) {
+            categoryObj.offer = {
+                ...categoryObj.offer,
+                isActive: true,
+                currentValue: currentOffer
+            };
+        }
+        return categoryObj;
+    });
+}
+
+function transformProducts(products, cartItems, wishlistItems) {
+    return products.map(product => {
+        let effectivePrice = product.salePrice || product.regularPrice;
+        let hasOffer = false;
+        let offerDetails = null;
+        
+        if (product.category && product.category.offer && product.category.offer.isActive) {
+            const now = new Date();
+            const offerStartDate = product.category.offer.startDate ? new Date(product.category.offer.startDate) : null;
+            const offerEndDate = product.category.offer.endDate ? new Date(product.category.offer.endDate) : null;
+            
+            if ((!offerStartDate || now >= offerStartDate) && (!offerEndDate || now <= offerEndDate)) {
+                hasOffer = true;
+                offerDetails = {
+                    type: product.category.offer.discountType,
+                    value: product.category.offer.discountValue,
+                    maxAmount: product.category.offer.maxDiscountAmount,
+                    endDate: product.category.offer.endDate
+                };
+                
+                if (product.category.offer.discountType === 'percentage') {
+                    const discountAmount = (effectivePrice * product.category.offer.discountValue) / 100;
+                    effectivePrice = Math.max(effectivePrice - Math.min(discountAmount, product.category.offer.maxDiscountAmount || discountAmount), 0);
+                } else if (product.category.offer.discountType === 'fixed') {
+                    effectivePrice = Math.max(effectivePrice - product.category.offer.discountValue, 0);
+                }
+            }
+        }
+
+        return {
+            ...product,
+            price: effectivePrice,
+            originalPrice: product.salePrice || product.regularPrice,
+            hasOffer,
+            offerDetails,
+            inCart: cartItems.includes(product._id.toString()),
+            inWishlist: wishlistItems.includes(product._id.toString())
+        };
+    });
+}
 
 module.exports = {
     loadShop,

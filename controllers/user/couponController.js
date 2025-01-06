@@ -44,45 +44,30 @@ const calculateBestDiscount = async (cart, coupon) => {
         if (coupon) {
             if (coupon.discountType === 'percentage') {
                 couponDiscount = (subtotalBeforeDiscount * Number(coupon.discountAmount)) / 100;
+                // Apply maximum discount cap for percentage discounts
+                if (coupon.maxDiscountAmount && couponDiscount > coupon.maxDiscountAmount) {
+                    couponDiscount = Number(coupon.maxDiscountAmount);
+                }
             } else {
-                couponDiscount = Number(coupon.discountAmount);
-            }
-
-            // Apply maximum discount cap
-            if (coupon.maxDiscountAmount) {
-                couponDiscount = Math.min(couponDiscount, Number(coupon.maxDiscountAmount));
+                // For fixed amount discounts
+                couponDiscount = Math.min(Number(coupon.discountAmount), subtotalBeforeDiscount);
             }
         }
 
-        // Compare and return the better discount
-        const discounts = {
-            categoryDiscount: {
-                amount: totalCategoryDiscount,
-                type: 'category',
-                breakdown: Object.fromEntries(categoryDiscounts)
-            },
-            couponDiscount: {
-                amount: couponDiscount,
-                type: 'coupon',
-                code: coupon ? coupon.code : null
-            },
-            subtotalBeforeDiscount
+        // Determine best discount
+        let bestDiscount = {
+            type: totalCategoryDiscount > couponDiscount ? 'category' : 'coupon',
+            amount: Math.max(totalCategoryDiscount, couponDiscount)
         };
 
-        // Determine which discount is better
-        if (totalCategoryDiscount >= couponDiscount) {
-            discounts.bestDiscount = {
-                type: 'category',
-                amount: totalCategoryDiscount
-            };
-        } else {
-            discounts.bestDiscount = {
-                type: 'coupon',
-                amount: couponDiscount
-            };
-        }
+        // Ensure discount doesn't exceed subtotal
+        bestDiscount.amount = Math.min(bestDiscount.amount, subtotalBeforeDiscount);
 
-        return discounts;
+        return {
+            subtotalBeforeDiscount,
+            bestDiscount,
+            categoryDiscounts: Array.from(categoryDiscounts.entries())
+        };
     } catch (error) {
         console.error('Error calculating best discount:', error);
         throw error;
@@ -161,48 +146,40 @@ const applyCoupon = async (req, res) => {
         // Apply the best discount
         const bestDiscount = discounts.bestDiscount;
         const taxRate = 0.05;
+        const subtotalAfterDiscount = discounts.subtotalBeforeDiscount - bestDiscount.amount;
+        const tax = Number((subtotalAfterDiscount * taxRate).toFixed(2));
+        const total = Number((subtotalAfterDiscount + tax).toFixed(2));
 
+        // Store coupon in cart if it gives better discount
         if (bestDiscount.type === 'coupon') {
-            // Store coupon in cart if it gives better discount
             cart.coupon = {
                 code: coupon.code,
                 discountAmount: Number(bestDiscount.amount.toFixed(2)),
                 discountType: coupon.discountType
             };
             await cart.save();
-
-            const subtotalAfterDiscount = discounts.subtotalBeforeDiscount - bestDiscount.amount;
-            const tax = Number((subtotalAfterDiscount * taxRate).toFixed(2));
-            const total = Number((subtotalAfterDiscount + tax).toFixed(2));
-
-            res.json({
-                success: true,
-                message: 'Coupon applied successfully',
-                data: {
-                    subtotal: Number(discounts.subtotalBeforeDiscount.toFixed(2)),
-                    discountAmount: Number(bestDiscount.amount.toFixed(2)),
-                    tax,
-                    total,
-                    coupon: {
-                        code: coupon.code,
-                        discountType: coupon.discountType,
-                        discountAmount: Number(bestDiscount.amount.toFixed(2))
-                    }
-                }
-            });
-        } else {
-            // If category discount is better, inform the user
-            return res.status(400).json({
-                success: false,
-                message: 'Category discount offers better savings (₹' + bestDiscount.amount.toFixed(2) + '). Coupon not applied.'
-            });
         }
 
+        res.json({
+            success: true,
+            message: 'Coupon applied successfully',
+            data: {
+                subtotal: Number(discounts.subtotalBeforeDiscount.toFixed(2)),
+                discountAmount: Number(bestDiscount.amount.toFixed(2)),
+                tax,
+                total,
+                coupon: bestDiscount.type === 'coupon' ? {
+                    code: coupon.code,
+                    discountType: coupon.discountType,
+                    discountAmount: Number(bestDiscount.amount.toFixed(2))
+                } : null
+            }
+        });
     } catch (error) {
         console.error('Error applying coupon:', error);
         res.status(500).json({
             success: false,
-            message: 'Failed to apply coupon'
+            message: 'Failed to apply coupon. Please try again.'
         });
     }
 };

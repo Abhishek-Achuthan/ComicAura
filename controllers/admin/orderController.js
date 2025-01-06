@@ -150,9 +150,9 @@ const listOrders = async (req, res) => {
 const updateOrderStatus = async (req, res) => {
     try {
         const { orderId } = req.params;
-        const { status } = req.body;
+        const { status, rejectionReason } = req.body;
 
-        const validStatuses = ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled', 'Returned'];
+        const validStatuses = ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled', 'Returned', 'Return Rejected'];
         if (!validStatuses.includes(status)) {
             return res.status(400).json({ 
                 message: "Invalid status" 
@@ -167,7 +167,7 @@ const updateOrderStatus = async (req, res) => {
             });
         }
 
-        if ((order.orderStatus === 'Cancelled' || order.orderStatus === 'Delivered') && status !== 'Returned') {
+        if ((order.orderStatus === 'Cancelled' || order.orderStatus === 'Delivered') && status !== 'Returned' && status !== 'Return Rejected') {
             return res.status(400).json({
                 success: false,
                 message: `Cannot update status of ${order.orderStatus.toLowerCase()} orders`
@@ -182,6 +182,18 @@ const updateOrderStatus = async (req, res) => {
                 }
             }));
             await Product.bulkWrite(bulkOps);
+        }
+
+        // Handle return rejection
+        if (status === 'Return Rejected') {
+            if (!rejectionReason) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Rejection reason is required"
+                });
+            }
+            order.returnStatus = 'rejected';
+            order.rejectionReason = rejectionReason;
         }
 
         order.orderStatus = status;

@@ -1,3 +1,5 @@
+const User = require('../models/userSchema');
+
 const isLogin = async (req, res, next) => {
     try {
         if (req.session.userId) {
@@ -12,10 +14,22 @@ const isLogin = async (req, res, next) => {
 
 const isLoggedIn = async (req, res, next) => {
     try {
-        if (req.session.userId) {
-            return next();
+        if (!req.session.userId) {
+            return res.redirect("/login");
         }
-        res.redirect("/login");
+
+        const user = await User.findById(req.session.userId);
+        if (!user || user.isBlocked) {
+            req.session.destroy((err) => {
+                if (err) {
+                    console.error("Session destruction error:", err);
+                }
+                return res.redirect("/login?error=Your account has been blocked. Please contact support.");
+            });
+            return;
+        }
+
+        next();
     } catch (error) {
         console.error("User auth middleware error:", error);
         res.status(500).render("error", { message: "Server error occurred" });

@@ -2,6 +2,7 @@
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="/js/common.js"></script>
 
 <style>
 .modal-container {
@@ -204,6 +205,40 @@
 .swal2-cancel {
     background-color: #95a5a6 !important;
 }
+
+.btn-close-white {
+    filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+.modal-backdrop {
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+#rejectionReasonModal .modal-content {
+    background-color: #1a1a1a;
+    color: #fff;
+    border: 1px solid #333;
+}
+
+#rejectionReasonModal .modal-header,
+#rejectionReasonModal .modal-footer {
+    border-color: #333;
+}
+
+#rejectionReasonModal .btn-close {
+    opacity: 0.8;
+    padding: 0.5rem;
+}
+
+#rejectionReasonModal .btn-close:hover {
+    opacity: 1;
+}
+
+#rejectionReasonModal .modal-body {
+    padding: 1.5rem;
+    font-size: 1rem;
+    line-height: 1.5;
+}
 </style>
 
 <div class="main-content">
@@ -240,29 +275,38 @@
                                             <span class="badge badge-<%= 
                                                 order.orderStatus === 'Delivered' ? 'success' : 
                                                 order.orderStatus === 'Cancelled' ? 'danger' : 
-                                                order.orderStatus === 'Returned' ? 'warning' :
+                                                order.orderStatus === 'Returned' || order.orderStatus === 'Return Rejected' ? 'warning' :
                                                 'primary' 
                                             %>">
                                                 <%= order.orderStatus %>
                                             </span>
-                                            <% if (order.returnStatus) { %>
+                                            <% if (order.returnRequested || order.returnStatus === 'rejected' || order.orderStatus === 'Return Rejected') { %>
                                                 <br>
                                                 <small class="badge badge-<%= 
                                                     order.returnStatus === 'approved' ? 'success' : 
-                                                    order.returnStatus === 'rejected' ? 'danger' : 
+                                                    (order.returnStatus === 'rejected' || order.orderStatus === 'Return Rejected') ? 'danger' : 
                                                     'warning' 
                                                 %>">
-                                                    Return <%= order.returnStatus.charAt(0).toUpperCase() + order.returnStatus.slice(1) %>
+                                                    <% if (order.returnStatus === 'rejected' || order.orderStatus === 'Return Rejected') { %>
+                                                        Return Rejected
+                                                        <button class="btn btn-link btn-sm text-white p-0 ml-1" 
+                                                                onclick="showRejectionReason('<%= order._id %>')"
+                                                                style="text-decoration: underline; font-size: 0.8em;">
+                                                            View Reason
+                                                        </button>
+                                                    <% } else { %>
+                                                        Return <%= order.returnStatus ? order.returnStatus.charAt(0).toUpperCase() + order.returnStatus.slice(1) : 'Pending' %>
+                                                    <% } %>
                                                 </small>
                                             <% } %>
                                         </td>
                                         <td>
                                             <a href="#modal-<%= order._id %>" class="btn btn-info">View Details</a>
-                                            <% if (order.orderStatus === 'Delivered' && !order.returnStatus) { %>
+                                            <% if (order.orderStatus === 'Delivered' && !order.returnRequested && !order.isReturned && order.returnStatus !== 'rejected') { %>
                                                 <button class="btn btn-warning" onclick="initiateReturn('<%= order._id %>')">
                                                     Return
                                                 </button>
-                                            <% } else if (order.orderStatus !== 'Cancelled' && order.orderStatus !== 'Delivered' && order.orderStatus !== 'Returned') { %>
+                                            <% } else if (order.orderStatus !== 'Cancelled' && order.orderStatus !== 'Delivered' && order.orderStatus !== 'Returned' && order.orderStatus !== 'Return Rejected') { %>
                                                 <button class="btn btn-danger" onclick="cancelOrder('<%= order._id %>')">
                                                     Cancel
                                                 </button>
@@ -330,51 +374,75 @@
                                         <span class="badge badge-<%= 
                                             order.orderStatus === 'Delivered' ? 'success' : 
                                             order.orderStatus === 'Cancelled' ? 'danger' : 
-                                            order.orderStatus === 'Returned' ? 'warning' :
+                                            order.orderStatus === 'Returned' || order.orderStatus === 'Return Rejected' ? 'warning' :
                                             'primary' 
                                         %>">
                                             <%= order.orderStatus %>
                                         </span>
                                     </p>
-                                    <% if (order.returnStatus) { %>
-                                        <p><strong>Return Status:</strong> 
+                                    <% if (order.returnRequested || order.returnStatus === 'rejected' || order.orderStatus === 'Return Rejected') { %>
+                                        <p>
+                                            <strong>Return Status:</strong>
                                             <span class="badge badge-<%= 
                                                 order.returnStatus === 'approved' ? 'success' : 
-                                                order.returnStatus === 'rejected' ? 'danger' : 
+                                                (order.returnStatus === 'rejected' || order.orderStatus === 'Return Rejected') ? 'danger' : 
                                                 'warning' 
                                             %>">
-                                                <%= order.returnStatus.charAt(0).toUpperCase() + order.returnStatus.slice(1) %>
+                                                <% if (order.returnStatus === 'rejected' || order.orderStatus === 'Return Rejected') { %>
+                                                    Return Rejected
+                                                    <button class="btn btn-link btn-sm text-white p-0 ml-1" 
+                                                            onclick="showRejectionReason('<%= order._id %>')"
+                                                            style="text-decoration: underline; font-size: 0.8em;">
+                                                        View Reason
+                                                    </button>
+                                                <% } else { %>
+                                                    <%= order.returnStatus ? order.returnStatus.charAt(0).toUpperCase() + order.returnStatus.slice(1) : 'Pending' %>
+                                                <% } %>
                                             </span>
                                         </p>
                                         <% if (order.returnReason) { %>
                                             <p><strong>Return Reason:</strong> <%= order.returnReason %></p>
                                         <% } %>
-                                        <% if (order.returnStatus === 'rejected' && order.rejectionReason) { %>
-                                            <p><strong>Rejection Reason:</strong> <%= order.rejectionReason %></p>
-                                        <% } %>
                                     <% } %>
                                 </div>
 
-                                <div class="address-box">
-                                    <h4>Shipping Address</h4>
+                                <div class="shipping-box mb-4 p-3 bg-dark border border-secondary rounded">
+                                    <h4 class="mb-3">Shipping Address</h4>
                                     <% if (order.shippingAddress) { %>
-                                        <p><%= order.shippingAddress.name %></p>
-                                        <p><%= order.shippingAddress.street %></p>
-                                        <p>
-                                            <%= order.shippingAddress.city %>, 
-                                            <%= order.shippingAddress.state %> - 
-                                            <%= order.shippingAddress.pinCode %>
-                                        </p>
-                                        <p>Phone: <%= order.shippingAddress.phoneNumber %></p>
+                                        <div class="address-details">
+                                            <p class="mb-2"><strong><%= order.shippingAddress.name %></strong></p>
+                                            <p class="mb-2"><%= order.shippingAddress.street %></p>
+                                            <p class="mb-2">
+                                                <%= order.shippingAddress.city %>, 
+                                                <%= order.shippingAddress.state %> - 
+                                                <%= order.shippingAddress.pinCode %>
+                                            </p>
+                                            <p class="mb-2"><i class="fas fa-phone me-2"></i><%= order.shippingAddress.phoneNumber %></p>
+                                        </div>
                                     <% } else { %>
-                                        <p>Address information not available</p>
+                                        <p class="text-muted mb-0">Address information not available</p>
                                     <% } %>
                                 </div>
 
-                                <div class="payment-box">
-                                    <h4>Payment Information</h4>
-                                    <p>Method: <%= order.paymentMethod ? order.paymentMethod.toUpperCase() : 'N/A' %></p>
-                                    <p>Status: <%= order.paymentStatus || 'N/A' %></p>
+                                <div class="payment-box p-3 bg-dark border border-secondary rounded">
+                                    <h4 class="mb-3">Payment Information</h4>
+                                    <div class="payment-details">
+                                        <p class="mb-2">
+                                            <strong>Method:</strong> 
+                                            <span class="badge bg-info">
+                                                <%= order.paymentMethod ? order.paymentMethod.toUpperCase() : 'N/A' %>
+                                            </span>
+                                        </p>
+                                        <p class="mb-2">
+                                            <strong>Status:</strong> 
+                                            <span class="badge <%= order.paymentStatus === 'Paid' ? 'bg-success' : 'bg-warning' %>">
+                                                <%= order.paymentStatus || 'N/A' %>
+                                            </span>
+                                        </p>
+                                        <p class="mb-0">
+                                            <strong>Amount:</strong> ₹<%= order.totalAmount ? order.totalAmount.toFixed(2) : '0.00' %>
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -407,6 +475,23 @@
                         <a href="/shop" class="btn btn-info">Shop Now</a>
                     </div>
                 <% } %>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Rejection Reason Modal -->
+<div class="modal fade" id="rejectionReasonModal" tabindex="-1" role="dialog" aria-labelledby="rejectionReasonModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content bg-dark text-white">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title" id="rejectionReasonModalLabel">Return Request Rejection Reason</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="rejectionReasonText">
+            </div>
+            <div class="modal-footer border-secondary">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
@@ -467,25 +552,32 @@ async function cancelOrder(orderId) {
 
 async function initiateReturn(orderId) {
     try {
-        const result = await Swal.fire({
+        const { value: returnData } = await Swal.fire({
             title: 'Return Order',
-            text: 'Are you sure you want to return this order?',
-            icon: 'warning',
+            input: 'textarea',
+            inputLabel: 'Please enter reason for return',
+            inputPlaceholder: 'Enter your reason here...',
             showCancelButton: true,
-            confirmButtonText: 'Yes, return it!',
-            cancelButtonText: 'No, keep it',
+            confirmButtonText: 'Submit',
+            cancelButtonText: 'Cancel',
             background: '#1a1a1a',
             color: '#fff',
-            confirmButtonColor: '#e74c3c',
-            cancelButtonColor: '#95a5a6'
+            confirmButtonColor: '#3498db',
+            cancelButtonColor: '#95a5a6',
+            inputValidator: (value) => {
+                if (!value || !value.trim()) {
+                    return 'Please enter a reason for return';
+                }
+            }
         });
 
-        if (result.isConfirmed) {
+        if (returnData) {
             const response = await fetch(`/initiate-return/${orderId}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
-                }
+                },
+                body: JSON.stringify({ reason: returnData })
             });
 
             const data = await response.json();
@@ -516,6 +608,31 @@ async function initiateReturn(orderId) {
         });
     }
 }
+
+function showRejectionReason(orderId) {
+    const orders = <%- JSON.stringify(orders) %>;
+    const order = orders.find(o => o._id === orderId);
+    if (order && order.rejectionReason) {
+        document.getElementById('rejectionReasonText').textContent = order.rejectionReason;
+        const modal = new bootstrap.Modal(document.getElementById('rejectionReasonModal'));
+        modal.show();
+    } else {
+        Swal.fire({
+            title: 'No Reason Available',
+            text: 'No rejection reason was provided.',
+            icon: 'info',
+            background: '#1a1a1a',
+            color: '#fff'
+        });
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const rejectionModal = document.getElementById('rejectionReasonModal');
+    rejectionModal.addEventListener('hidden.bs.modal', function () {
+        document.getElementById('rejectionReasonText').textContent = '';
+    });
+});
 </script>
 
 <%- include('../partials/footer') %>

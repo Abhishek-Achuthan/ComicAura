@@ -96,15 +96,39 @@ line-height: 1.4;
 }
 
 .price-container {
-margin-bottom: 15px;
-transition: all 0.3s ease;
+margin: 10px 0;
+display: flex;
+flex-direction: column;
+gap: 4px;
+}
+
+.offer-tag {
+display: inline-block;
+background: #ff6b6b;
+color: white;
+padding: 4px 8px;
+border-radius: 4px;
+font-size: 0.85rem;
+font-weight: 600;
+margin-bottom: 5px;
+}
+
+.original-price {
+text-decoration: line-through;
+color: #999;
+font-size: 0.9rem;
+}
+
+.discounted-price, .sale-price {
+color: #ff6b6b;
+font-weight: 600;
+font-size: 1.1rem;
 }
 
 .regular-price {
-font-size: 1.3rem;
+color: #fff;
 font-weight: 600;
-color: var(--primary-color);
-display: block;
+font-size: 1.1rem;
 }
 
 .cart-item .col-md-3:nth-child(3) {

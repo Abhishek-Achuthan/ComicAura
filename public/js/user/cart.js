@@ -37,9 +37,23 @@ document.addEventListener('DOMContentLoaded', () => {
                     quantityInput.value = action === 'increase' ? currentQty + 1 : currentQty - 1;
                     
                     const cartItem = this.closest('.cart-item');
-                    const price = parseFloat(cartItem.dataset.price);
-                    const total = price * parseInt(quantityInput.value);
-                    cartItem.querySelector('.price-container').innerHTML = `₹${total.toFixed(2)}`;
+                    const priceContainer = cartItem.querySelector('.price-container');
+                    const regularPrice = parseFloat(priceContainer.dataset.regularPrice);
+                    const salePrice = parseFloat(priceContainer.dataset.salePrice);
+                    const effectivePrice = salePrice < regularPrice ? salePrice : regularPrice;
+                    const newQuantity = parseInt(quantityInput.value);
+
+                    // Update price display
+                    if (salePrice < regularPrice) {
+                    priceContainer.innerHTML = `
+                        <span class="sale-price">₹${(salePrice * newQuantity).toFixed(2)}</span>
+                        <span class="original-price">₹${(regularPrice * newQuantity).toFixed(2)}</span>
+                    `;
+                    } else {
+                        priceContainer.innerHTML = `
+                            <span class="regular-price">₹${(regularPrice * newQuantity).toFixed(2)}</span>
+                        `;
+                    }
 
                     document.getElementById('subtotal').textContent = `₹${data.itemSubtotal.toFixed(2)}`;
                     document.getElementById('tax').textContent = `₹${data.tax.toFixed(2)}`;
@@ -61,7 +75,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-
 async function addToCart(productId, button) {
     try {
         const response = await fetch('/cart/add', {
@@ -76,9 +89,8 @@ async function addToCart(productId, button) {
             document.getElementById('cartCount').textContent = data.cartCount;
             toastr.success('Item added to cart');
 
-            // Update button
             if (button) {
-                button.innerHTML = '<i class="fas fa-shopping-cart"></i> Go to Cart';
+                button.innerHTML = '<i class="fas fa-shopping-cart"></i>';
                 button.classList.add('in-cart');
                 button.onclick = () => window.location.href = '/cart';
             }
@@ -109,7 +121,7 @@ async function removeFromCart(productId) {
             toastr.success('Item removed from cart');
             
             if (data.cartCount === 0) {
-                setTimeout(() => location.reload(), 500);h
+                setTimeout(() => location.reload(), 500);
             }
         } else {
             toastr.error(data.message || 'Failed to remove item');

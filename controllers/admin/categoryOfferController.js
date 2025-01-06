@@ -1,35 +1,49 @@
-const CategoryOffer = require('../../models/categoryOfferModel');
+const Category = require('../../models/categoryModel');
 
-// Add new category offer
-exports.addCategoryOffer = async (req, res) => {
+const addCategoryOffer = async (req, res) => {
     try {
-        const { categoryId, discountPercentage, startDate, endDate } = req.body;
+        const { categoryId, discountValue, startDate, endDate, maxDiscountAmount } = req.body;
         
-        // Check if an active offer already exists for this category
-        const existingOffer = await CategoryOffer.findOne({
-            category: categoryId,
-            isActive: true,
-            endDate: { $gt: new Date() }
+        const existingCategory = await Category.findOne({
+            _id: categoryId,
+            'offer.isActive': true,
+            'offer.endDate': { $gt: new Date() }
         });
 
-        if (existingOffer) {
+        if (existingCategory && existingCategory.offer && existingCategory.offer.isActive) {
             return res.status(400).json({
                 success: false,
                 message: 'An active offer already exists for this category'
             });
         }
 
-        const offer = await CategoryOffer.create({
-            category: categoryId,
-            discountPercentage,
-            startDate,
-            endDate
-        });
+        // Update the category with the offer
+        const updatedCategory = await Category.findByIdAndUpdate(
+            categoryId,
+            {
+                offer: {
+                    discountType: 'percentage',
+                    discountValue: Number(discountValue),
+                    startDate: new Date(startDate),
+                    endDate: new Date(endDate),
+                    maxDiscountAmount: maxDiscountAmount ? Number(maxDiscountAmount) : undefined,
+                    isActive: true
+                }
+            },
+            { new: true }
+        );
+
+        if (!updatedCategory) {
+            return res.status(404).json({
+                success: false,
+                message: 'Category not found'
+            });
+        }
 
         res.json({
             success: true,
             message: 'Category offer added successfully',
-            offer
+            offer: updatedCategory.offer
         });
     } catch (error) {
         console.error('Error adding category offer:', error);
@@ -40,16 +54,21 @@ exports.addCategoryOffer = async (req, res) => {
     }
 };
 
-// Get category offers
-exports.getCategoryOffers = async (req, res) => {
+const getCategoryOffers = async (req, res) => {
     try {
         const { categoryId } = req.params;
-        const offers = await CategoryOffer.find({ category: categoryId })
-            .sort('-createdAt');
+        const category = await Category.findById(categoryId);
         
+        if (!category) {
+            return res.status(404).json({
+                success: false,
+                message: 'Category not found'
+            });
+        }
+
         res.json({
             success: true,
-            offers
+            offer: category.offer
         });
     } catch (error) {
         console.error('Error fetching category offers:', error);
@@ -58,4 +77,9 @@ exports.getCategoryOffers = async (req, res) => {
             message: 'Failed to fetch category offers'
         });
     }
+};
+
+module.exports = {
+    addCategoryOffer,
+    getCategoryOffers
 };

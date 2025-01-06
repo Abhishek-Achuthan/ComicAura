@@ -297,11 +297,9 @@ body {
 
 /* Status Badge Styles */
 .badge {
-    padding: 8px 16px;
-    border-radius: 20px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
     font-weight: 500;
-    letter-spacing: 0.5px;
-    font-size: 0.85rem;
 }
 
 .badge-success {
@@ -422,4 +420,97 @@ body {
         opacity: 0;
         transform: translateY(-10px);
     }
+}
+
+/* Offer Styles */
+.offer-cell {
+    min-width: 200px;
+    padding: 1rem !important;
+}
+
+.offer-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.active-offer-container {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.5rem;
+    padding: 0.25rem 0;
+}
+
+.add-offer-container {
+    display: flex;
+    justify-content: flex-start;
+    padding: 0.25rem 0;
+}
+
+.offer-badge {
+    font-size: 0.875rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+}
+
+.offer-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Make table more compact but maintain readability */
+.table td {
+    vertical-align: middle;
+    padding: 1rem 0.75rem;
+}
+
+/* Ensure consistent button sizes */
+.btn-sm {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+}
+
+.btn-outline-danger.btn-sm,
+.btn-outline-primary.btn-sm {
+    height: 31px;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Add some hover effects */
+.btn-outline-danger.btn-sm:hover {
+    background-color: #dc3545;
+    color: white;
+}
+
+.btn-outline-primary.btn-sm:hover {
+    background-color: #0d6efd;
+    color: white;
+}
+
+/* Style for the offer delete button */
+.btn-delete-offer {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+    line-height: 1;
+}
+
+/* Style for active offer display */
+.active-offer {
+    display: inline-flex;
+    align-items: center;
+    background: rgba(25, 135, 84, 0.1);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+}
+
+.active-offer .percentage {
+    color: #198754;
+    font-weight: 600;
+    margin-right: 0.5rem;
 }

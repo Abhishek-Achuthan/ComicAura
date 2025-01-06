@@ -1,6 +1,12 @@
 const mongoose = require('mongoose');
 
 const orderSchema = new mongoose.Schema({
+    orderId: {
+        type: String,
+        required: true,
+        unique: true,
+        trim: true
+    },
     userId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
@@ -62,6 +68,22 @@ const orderSchema = new mongoose.Schema({
         type: Number,
         required: true
     },
+    discountAmount: {
+        type: Number,
+        default: 0
+    },
+    coupon: {
+        code: {
+            type: String
+        },
+        discountAmount: {
+            type: Number
+        },
+        discountType: {
+            type: String,
+            enum: ['percentage', 'fixed']
+        }
+    },
     taxAmount: {
         type: Number,
         required: true
@@ -82,7 +104,7 @@ const orderSchema = new mongoose.Schema({
     },
     orderStatus: {
         type: String,
-        enum: ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled', 'Returned'],
+        enum: ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled', 'Returned', 'Return Rejected'],
         default: 'Pending'
     },
     razorpayOrderId: {
@@ -118,13 +140,25 @@ const orderSchema = new mongoose.Schema({
     },
     deliveryDate: {
         type: Date
+    },
+    // New fields for return rejection
+    returnStatus: {
+        type: String,
+        enum: ['pending', 'approved', 'rejected'],
+        default: 'pending'
+    },
+    rejectionReason: {
+        type: String
     }
 });
 
-// Method to update order status
 orderSchema.methods.updateStatus = async function(status, comment) {
     this.orderStatus = status;
     this.statusHistory.push({ status, comment });
+    if (status === 'Return Rejected') {
+        this.returnStatus = 'rejected';
+        this.rejectionReason = comment;
+    }
     return this.save();
 };
 

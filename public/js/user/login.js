@@ -1,4 +1,19 @@
 document.addEventListener('DOMContentLoaded', function() {
+    // Check for error message in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const errorMessage = urlParams.get('error');
+    
+    if (errorMessage) {
+        Swal.fire({
+            title: 'Access Denied',
+            text: errorMessage,
+            icon: 'error',
+            confirmButtonColor: '#d33',
+            background: '#2A2A2A',
+            color: '#fff'
+        });
+    }
+
     document.querySelectorAll('.social-btn').forEach(btn => {
         btn.addEventListener('mouseenter', function() {
             this.style.transform = 'translateY(-3px)';

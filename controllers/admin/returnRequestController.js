@@ -97,7 +97,9 @@ const rejectReturn = async (req, res) => {
 
         const order = await Order.findById(returnRequest.order);
         if (order) {
+            order.orderStatus = 'Return Rejected';
             order.returnStatus = 'rejected';
+            order.rejectionReason = reason;
             await order.save();
         }
 

@@ -52,12 +52,10 @@ router.post('/orders/:orderId/status', adminAuth.isAdmin, orderController.update
 router.post('/orders/:orderId/cancel', adminAuth.isAdmin, orderController.cancelOrderAdmin);
 router.put('/product/:productId/stock', adminAuth.isAdmin, orderController.updateStock);
 
-// Return request routes
 router.get('/returns', adminAuth.isAdmin, returnRequestController.getAllReturnRequests);
 router.post('/returns/:returnRequestId/approve', adminAuth.isAdmin, returnRequestController.approveReturn);
 router.post('/returns/:returnRequestId/reject', adminAuth.isAdmin, returnRequestController.rejectReturn);
 
-// Coupon Routes
 router.get("/coupons", adminAuth.isAdmin, couponController.loadCoupon);
 router.post("/coupons", adminAuth.isAdmin, couponController.createCoupon);
 router.put("/coupons/:id", adminAuth.isAdmin, couponController.updateCoupon);
@@ -65,19 +63,11 @@ router.delete("/coupons/:id", adminAuth.isAdmin, couponController.deleteCoupon);
 router.post("/coupons/:id/toggle", adminAuth.isAdmin, couponController.toggleCouponStatus);
 router.get("/coupons/generate-code", adminAuth.isAdmin, couponController.generateCouponCode);
 
-// Product Offer Routes
-router.post('/offers/product', adminAuth.isAdmin, offerController.createProductOffer);
-router.get('/offers/product', adminAuth.isAdmin, offerController.getProductOffers);
-router.put('/offers/product/:offerId', adminAuth.isAdmin, offerController.updateProductOffer);
-router.delete('/offers/product/:offerId', adminAuth.isAdmin, offerController.deleteProductOffer);
-
-// Category Offer Routes
 router.post('/offers/category', adminAuth.isAdmin, offerController.createCategoryOffer);
 router.get('/offers/category', adminAuth.isAdmin, offerController.getCategoryOffers);
 router.put('/offers/category/:offerId', adminAuth.isAdmin, offerController.updateCategoryOffer);
 router.delete('/offers/category/:offerId', adminAuth.isAdmin, offerController.deleteCategoryOffer);
 
-// Sales Report Routes
 router.get('/sales', adminAuth.isAdmin, orderController.loadSalesReport);
 router.get('/sales-report', adminAuth.isAdmin, orderController.getSalesReport);
 router.get('/sales-report/:type(pdf|excel)', adminAuth.isAdmin, orderController.downloadSalesReport);

@@ -24,18 +24,18 @@ const categoryOfferSchema = new mongoose.Schema({
         type: Boolean,
         default: true
     },
+    description: {
+        type: String,
+        trim: true
+    },
     createdAt: {
         type: Date,
         default: Date.now
     }
 });
 
-// Validate end date is after start date
-categoryOfferSchema.pre('save', function(next) {
-    if (this.endDate <= this.startDate) {
-        next(new Error('End date must be after start date'));
-    }
-    next();
-});
+// Add index for faster queries
+categoryOfferSchema.index({ category: 1, isActive: 1 });
+categoryOfferSchema.index({ startDate: 1, endDate: 1 });
 
 module.exports = mongoose.model('CategoryOffer', categoryOfferSchema);

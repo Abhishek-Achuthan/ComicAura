@@ -9,7 +9,6 @@ const db = require("./config/database");
 const userRouter = require("./routes/userRouter")
 const adminRouter = require("./routes/adminRouter")
 const authRouter = require('./routes/authRouter');
-const { checkUser } = require('./middleware/adminAuth');
 
 db();
 

@@ -1,4 +1,5 @@
 <%- include('../partials/header') %>
+<%- include('../partials/offerBanner') %>
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
 <link rel="stylesheet" href="/css/user/shop.css">
@@ -36,7 +37,12 @@
                     <select id="categorySelect" class="filter-select">
                         <option value="all">All Categories</option>
                         <% categories.forEach(category => { %>
-                            <option value="<%= category._id %>"><%= category.name %></option>
+                            <option value="<%= category._id %>">
+                                <%= category.name %>
+                                <% if (category.offer && category.offer.isActive) { %>
+                                    🔥 <%= category.offer.discountType === 'percentage' ? `${category.offer.discountValue}% OFF` : `₹${category.offer.discountValue} OFF` %>
+                                <% } %>
+                            </option>
                         <% }); %>
                     </select>
                 </div>
@@ -63,15 +69,131 @@
                     <div id="priceError" class="text-danger mt-2" style="display: none;"></div>
                     <button id="applyPriceFilter" class="btn btn-primary btn-sm mt-2 w-100">Apply</button>
                 </div>
+
+                <div class="filter-section active-offers-section">
+                    <h3 class="filter-title <%= categories.some(cat => cat.offer && cat.offer.isActive) ? 'has-offers' : '' %>">
+                        <i class="fas fa-tag"></i> Special Category Offers
+                    </h3>
+                    <div class="active-offers">
+                        <% categories.forEach(category => { %>
+                            <% if (category.offer && category.offer.isActive) { %>
+                                <div class="offer-card" data-offer-id="<%= category._id %>">
+                                    <div class="offer-category"><%= category.name %></div>
+                                    <div class="offer-discount">
+                                        <%= category.offer.discountType === 'percentage' ? `${category.offer.discountValue}% OFF` : `₹${category.offer.discountValue} OFF` %>
+                                        <% if (category.offer.maxDiscountAmount) { %>
+                                            <div class="max-discount">Up to ₹<%= category.offer.maxDiscountAmount %></div>
+                                        <% } %>
+                                    </div>
+                                    <% if (category.offer.endDate) { %>
+                                        <div class="offer-expiry">
+                                            Ends: <%= new Date(category.offer.endDate).toLocaleDateString() %>
+                                        </div>
+                                    <% } %>
+                                </div>
+                            <% } %>
+                        <% }); %>
+                    </div>
+                </div>
             </aside>
 
             <div class="main-content">
                 <div class="products-container">
                     <div id="activeFilters"></div>
                     <div class="products-grid" id="productsGrid">
+                        <% products.forEach(product => { %>
+                            <div class="product-card animate__animated animate__fadeIn">
+                                <div class="product-actions">
+                                    <button class="wishlist-btn ${product.inWishlist ? 'active' : ''}"
+                                        onclick="toggleWishlist('${product._id}', this)"
+                                        data-product-id="${product._id}">
+                                        <i class="${product.inWishlist ? 'fas' : 'far'} fa-heart"></i>
+                                    </button>
+                                </div>
+                                <a href="/product/${product._id}" class="product-link">
+                                    <div class="product-image">
+                                        ${product.hasOffer ? `
+                                            <div class="offer-badge">
+                                                ${product.offerDetails.discountType === 'percentage' ? `${product.offerDetails.discountValue}% OFF` : `₹${product.offerDetails.discountValue} OFF`}
+                                            </div>
+                                        ` : ''}
+                                        <img src="${product.images && product.images[0] ? product.images[0] : '/images/placeholder.jpg'}" alt="${product.name}">
+                                    </div>
+                                    <div class="product-details">
+                                        <h3 class="product-title">${product.name}</h3>
+                                        <div class="product-rating">
+                                            <div class="rating-stars">
+                                                ${Array(5).fill(0).map((_, i) => `
+                                                    <i class="fas fa-star ${i < (product.averageRating || 0) ? 'filled' : ''}"></i>
+                                                `).join('')}
+                                            </div>
+                                            <span class="rating-count">(${product.ratings ? product.ratings.length : 0})</span>
+                                        </div>
+                                        <div class="product-price">
+                                            ${product.hasOffer ? `
+                                                <span class="original-price">₹${product.originalPrice.toFixed(2)}</span>
+                                            ` : ''}
+                                            <span class="current-price ${product.hasOffer ? 'discounted' : ''}">₹${product.price.toFixed(2)}</span>
+                                        </div>
+                                        ${product.hasOffer ? `
+                                            <div class="offer-info">
+                                                Category Offer: ${product.offerDetails.discountType === 'percentage' ? `${product.offerDetails.discountValue}% off` : `₹${product.offerDetails.discountValue} off`}
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                </a>
+                                ${product.inCart ? `
+                                    <button 
+                                        class="add-to-cart-btn in-cart" 
+                                        onclick="window.location.href='/cart'"
+                                    >
+                                        <i class="fas fa-shopping-cart"></i> Go to Cart
+                                    </button>
+                                ` : `
+                                    <button 
+                                        class="add-to-cart-btn" 
+                                        onclick="addToCart('${product._id}', this)"
+                                        data-product-id="${product._id}">
+                                        <i class="fas fa-cart-plus"></i> Add to Cart
+                                    </button>
+                                `}
+                            </div>
+                        <% }); %>
                     </div>
 
-                    <div id="shopPagination" class="pagination-container"></div>
+                    <div class="pagination-container">
+                        <div class="pagination">
+                            <% if (totalPages > 1) { %>
+                                <% if (hasPreviousPage) { %>
+                                    <a onclick="applyFilters(1)" class="page-link">First</a>
+                                    <a onclick="applyFilters(<%= previousPage %>)" class="page-link">Previous</a>
+                                <% } %>
+
+                                <% 
+                                let startPage = Math.max(1, currentPage - 2);
+                                let endPage = Math.min(totalPages, currentPage + 2);
+                                
+                                if (startPage > 1) { %>
+                                    <span class="page-dots">...</span>
+                                <% } %>
+
+                                <% for(let i = startPage; i <= endPage; i++) { %>
+                                    <a onclick="applyFilters(<%= i %>)" class="page-link <%= currentPage === i ? 'active' : '' %>">
+                                        <%= i %>
+                                    </a>
+                                <% } %>
+
+                                <% if (endPage < totalPages) { %>
+                                    <span class="page-dots">...</span>
+                                <% } %>
+
+                                <% if (hasNextPage) { %>
+                                    <a onclick="applyFilters(<%= nextPage %>)" class="page-link">Next</a>
+                                    <a onclick="applyFilters(<%= totalPages %>)" class="page-link">Last</a>
+                                <% } %>
+                            <% } %>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -81,7 +203,7 @@
 <script src="/js/user/pagination.js"></script>
 <script src="/js/user/cart.js"></script>
 <script src="/js/user/wishlist.js"></script>
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const searchInput = document.getElementById('searchInput');
@@ -93,23 +215,26 @@
         const maxPriceInput = document.getElementById('maxPrice');
         const applyPriceFilterBtn = document.getElementById('applyPriceFilter');
         const productsGrid = document.getElementById('productsGrid');
-        
-        // Store current filter state
-        let currentFilters = {
-            search: '',
-            category: 'all',
-            sort: 'newest',
-            rating: 'all',
-            minPrice: '',
-            maxPrice: '',
-            page: 1
-        };
 
-        // Initialize filters from URL parameters
+        const currentFilters = initializeFiltersFromURL();
+        updateFilterInputs(currentFilters);
+
+        searchBtn.addEventListener('click', () => applyFilters(1)); 
+        searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                applyFilters(1); 
+            }
+        });
+
+        categorySelect.addEventListener('change', () => applyFilters(1)); 
+        ratingSelect.addEventListener('change', () => applyFilters(1)); 
+        sortSelect.addEventListener('change', () => applyFilters(1)); 
+        applyPriceFilterBtn.addEventListener('click', () => applyFilters(1)); 
+
         function initializeFiltersFromURL() {
             const urlParams = new URLSearchParams(window.location.search);
-            
-            currentFilters = {
+            return {
                 search: urlParams.get('search') || '',
                 category: urlParams.get('category') || 'all',
                 sort: urlParams.get('sort') || 'newest',
@@ -118,109 +243,56 @@
                 maxPrice: urlParams.get('maxPrice') || '',
                 page: parseInt(urlParams.get('page')) || 1
             };
-
-            // Update UI elements with current filters
-            searchInput.value = currentFilters.search;
-            sortSelect.value = currentFilters.sort;
-            categorySelect.value = currentFilters.category;
-            ratingSelect.value = currentFilters.rating;
-            minPriceInput.value = currentFilters.minPrice;
-            maxPriceInput.value = currentFilters.maxPrice;
         }
 
-        // Initialize filters on page load
-        initializeFiltersFromURL();
-
-        // Update URL with current filters
-        function updateURL() {
-            const params = new URLSearchParams();
-            
-            Object.entries(currentFilters).forEach(([key, value]) => {
-                if (value && value !== 'all' && value !== '') {
-                    params.set(key, value);
-                }
-            });
-
-            const newURL = `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}`;
-            window.history.pushState({}, '', newURL);
+        function updateFilterInputs(filters) {
+            searchInput.value = filters.search;
+            categorySelect.value = filters.category;
+            sortSelect.value = filters.sort;
+            ratingSelect.value = filters.rating;
+            minPriceInput.value = filters.minPrice;
+            maxPriceInput.value = filters.maxPrice;
         }
 
-        // Validate price range
-        function validatePriceRange() {
-            const minPrice = parseFloat(minPriceInput.value);
-            const maxPrice = parseFloat(maxPriceInput.value);
-            const priceError = document.getElementById('priceError');
-            
-            if (minPrice && maxPrice && minPrice > maxPrice) {
-                priceError.textContent = 'Minimum price cannot be greater than maximum price';
-                priceError.style.display = 'block';
-                return false;
-            }
-            
-            if (minPrice < 0 || maxPrice < 0) {
-                priceError.textContent = 'Price cannot be negative';
-                priceError.style.display = 'block';
-                return false;
-            }
-            
-            priceError.style.display = 'none';
-            return true;
-        }
-
-        // Apply filters without search
-        function applyFiltersWithoutSearch() {
-            if (!validatePriceRange()) {
-                return;
-            }
-
-            currentFilters = {
-                ...currentFilters,
+        async function applyFilters(page = currentFilters.page) {
+            const filters = {
+                search: searchInput.value.trim(),
                 category: categorySelect.value,
                 sort: sortSelect.value,
                 rating: ratingSelect.value,
                 minPrice: minPriceInput.value,
                 maxPrice: maxPriceInput.value,
-                page: 1
+                page: page
             };
 
-            fetchProducts();
-        }
-
-        // Apply search with current filters
-        function applySearch() {
-            if (!validatePriceRange()) {
-                return;
-            }
-
-            currentFilters = {
-                ...currentFilters,
-                search: searchInput.value.trim(),
-                page: 1
-            };
-
-            fetchProducts();
-        }
-
-        // Fetch products with current filters
-        async function fetchProducts(page = 1) {
             try {
-                currentFilters.page = page;
-                updateURL();
-
                 const queryParams = new URLSearchParams();
-                Object.entries(currentFilters).forEach(([key, value]) => {
+                Object.entries(filters).forEach(([key, value]) => {
                     if (value && value !== 'all' && value !== '') {
                         queryParams.set(key, value);
                     }
                 });
+
+                queryParams.set('page', page);
+
+                const newURL = `${window.location.pathname}${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
+                window.history.pushState({}, '', newURL);
 
                 const response = await fetch(`/shop/filter?${queryParams.toString()}`);
                 const data = await response.json();
 
                 if (data.success) {
                     updateProductsGrid(data.products);
-                    updatePagination(data.currentPage, data.totalPages);
-                    updateActiveFilters();
+                    if (data.totalPages > 1) {
+                        updatePagination(data.currentPage, data.totalPages);
+                    } else {
+                        const paginationContainer = document.querySelector('.pagination');
+                        if (paginationContainer) {
+                            paginationContainer.innerHTML = '';
+                        }
+                    }
+                    updateActiveFilters(filters);
+                    currentFilters.page = data.currentPage; 
                 } else {
                     showError('Failed to load products');
                 }
@@ -230,26 +302,70 @@
             }
         }
 
-        // Show active filters
-        function updateActiveFilters() {
+        function updatePagination(currentPage, totalPages) {
+            const paginationContainer = document.querySelector('.pagination');
+            if (!paginationContainer || totalPages <= 1) {
+                if (paginationContainer) {
+                    paginationContainer.innerHTML = '';
+                }
+                return;
+            }
+
+            let paginationHTML = '';
+            
+            if (currentPage > 1) {
+                paginationHTML += `
+                    <a onclick="applyFilters(1)" class="page-link">First</a>
+                    <a onclick="applyFilters(${currentPage - 1})" class="page-link">Previous</a>
+                `;
+            }
+
+            let startPage = Math.max(1, currentPage - 2);
+            let endPage = Math.min(totalPages, currentPage + 2);
+
+            if (startPage > 1) {
+                paginationHTML += '<span class="page-dots">...</span>';
+            }
+
+            for (let i = startPage; i <= endPage; i++) {
+                paginationHTML += `
+                    <a onclick="applyFilters(${i})" class="page-link ${currentPage === i ? 'active' : ''}">${i}</a>
+                `;
+            }
+
+            if (endPage < totalPages) {
+                paginationHTML += '<span class="page-dots">...</span>';
+            }
+
+            if (currentPage < totalPages) {
+                paginationHTML += `
+                    <a onclick="applyFilters(${currentPage + 1})" class="page-link">Next</a>
+                    <a onclick="applyFilters(${totalPages})" class="page-link">Last</a>
+                `;
+            }
+
+            paginationContainer.innerHTML = paginationHTML;
+        }
+
+        function updateActiveFilters(filters) {
             const activeFiltersContainer = document.getElementById('activeFilters');
             let activeFiltersHTML = '';
 
-            if (currentFilters.category !== 'all') {
+            if (filters.category !== 'all') {
                 const categoryText = categorySelect.options[categorySelect.selectedIndex].text;
                 activeFiltersHTML += `<span class="active-filter">Category: ${categoryText}</span>`;
             }
-            if (currentFilters.rating !== 'all') {
-                activeFiltersHTML += `<span class="active-filter">Rating: ${currentFilters.rating}+ Stars</span>`;
+            if (filters.rating !== 'all') {
+                activeFiltersHTML += `<span class="active-filter">Rating: ${filters.rating}+ Stars</span>`;
             }
-            if (currentFilters.minPrice) {
-                activeFiltersHTML += `<span class="active-filter">Min Price: ₹${currentFilters.minPrice}</span>`;
+            if (filters.minPrice) {
+                activeFiltersHTML += `<span class="active-filter">Min Price: ₹${filters.minPrice}</span>`;
             }
-            if (currentFilters.maxPrice) {
-                activeFiltersHTML += `<span class="active-filter">Max Price: ₹${currentFilters.maxPrice}</span>`;
+            if (filters.maxPrice) {
+                activeFiltersHTML += `<span class="active-filter">Max Price: ₹${filters.maxPrice}</span>`;
             }
-            if (currentFilters.search) {
-                activeFiltersHTML += `<span class="active-filter">Search: "${currentFilters.search}"</span>`;
+            if (filters.search) {
+                activeFiltersHTML += `<span class="active-filter">Search: "${filters.search}"</span>`;
             }
 
             if (activeFiltersHTML) {
@@ -259,36 +375,25 @@
             activeFiltersContainer.innerHTML = activeFiltersHTML;
         }
 
-        // Event Listeners for search
-        searchBtn.addEventListener('click', applySearch);
-        searchInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                applySearch();
-            }
-        });
-
-        // Event Listeners for other filters (immediate application)
-        categorySelect.addEventListener('change', applyFiltersWithoutSearch);
-        ratingSelect.addEventListener('change', applyFiltersWithoutSearch);
-        sortSelect.addEventListener('change', applyFiltersWithoutSearch);
-
-        // Price filter button
-        applyPriceFilterBtn.addEventListener('click', applyFiltersWithoutSearch);
-
-        // Update products grid
         function updateProductsGrid(products) {
             productsGrid.innerHTML = products.length ? products.map(product => `
                 <div class="product-card animate__animated animate__fadeIn">
                     <div class="product-actions">
-                        <button class="wishlist-btn ${product.inWishlist ? 'in-wishlist' : ''}"
+                        <button class="wishlist-btn ${product.inWishlist ? 'active' : ''}"
                             onclick="toggleWishlist('${product._id}', this)"
                             data-product-id="${product._id}">
-                            <i class="fas fa-heart"></i>
+                            <i class="${product.inWishlist ? 'fas' : 'far'} fa-heart"></i>
                         </button>
                     </div>
                     <a href="/product/${product._id}" class="product-link">
                         <div class="product-image">
+                            ${product.hasOffer ? `
+                                <div class="offer-badge">
+                                    ${product.offerDetails.type === 'percentage' ? 
+                                        `${product.offerDetails.value}% OFF` : 
+                                        `₹${product.offerDetails.value} OFF`}
+                                </div>
+                            ` : ''}
                             <img src="${product.images && product.images[0] ? product.images[0] : '/images/placeholder.jpg'}" alt="${product.name}">
                         </div>
                         <div class="product-details">
@@ -301,7 +406,19 @@
                                 </div>
                                 <span class="rating-count">(${product.ratings ? product.ratings.length : 0})</span>
                             </div>
-                            <div class="product-price">₹${product.price.toFixed(2)}</div>
+                            <div class="product-price">
+                                ${product.hasOffer ? `
+                                    <span class="original-price">₹${product.originalPrice.toFixed(2)}</span>
+                                ` : ''}
+                                <span class="current-price ${product.hasOffer ? 'discounted' : ''}">₹${product.price.toFixed(2)}</span>
+                            </div>
+                            ${product.hasOffer ? `
+                                <div class="offer-info">
+                                    Category Offer: ${product.offerDetails.type === 'percentage' ? 
+                                        `${product.offerDetails.value}% off` : 
+                                        `₹${product.offerDetails.value} off`}
+                                </div>
+                            ` : ''}
                         </div>
                     </a>
                     ${product.inCart ? `
@@ -315,62 +432,19 @@
                         <button 
                             class="add-to-cart-btn" 
                             onclick="addToCart('${product._id}', this)"
-                            data-product-id="${product._id}"
-                        >
+                            data-product-id="${product._id}">
                             <i class="fas fa-cart-plus"></i> Add to Cart
                         </button>
                     `}
                 </div>
             `).join('') : `
                 <div class="no-products">
-                    <h3>No products found</h3>
-                    <p>Try adjusting your filters or search criteria</p>
+                    <i class="fas fa-box-open"></i>
+                    <p>No products found</p>
                 </div>
             `;
         }
 
-        // Initialize pagination
-        function updatePagination(currentPage, totalPages) {
-            const paginationContainer = document.getElementById('shopPagination');
-            
-            if (totalPages <= 1) {
-                paginationContainer.innerHTML = '';
-                return;
-            }
-
-            let paginationHTML = `
-                <button class="pagination-btn" 
-                    ${currentPage === 1 ? 'disabled' : ''} 
-                    onclick="fetchProducts(${currentPage - 1})">
-                    Previous
-                </button>
-            `;
-
-            for (let i = 1; i <= totalPages; i++) {
-                if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
-                    paginationHTML += `
-                        <button class="pagination-btn ${i === currentPage ? 'active' : ''}" 
-                            onclick="fetchProducts(${i})">
-                            ${i}
-                        </button>
-                    `;
-                } else if (i === currentPage - 3 || i === currentPage + 3) {
-                    paginationHTML += `<span class="pagination-ellipsis">...</span>`;
-                }
-            }
-
-            paginationHTML += `
-                <button class="pagination-btn" 
-                    ${currentPage === totalPages ? 'disabled' : ''} 
-                    onclick="fetchProducts(${currentPage + 1})">
-                    Next
-                </button>
-            `;
-
-            paginationContainer.innerHTML = paginationHTML;
-        }
-
-        // Error handling
         function showError(message) {
             const errorDiv = document.createElement('div');
             errorDiv.className = 'alert alert-danger';
@@ -379,8 +453,9 @@
             setTimeout(() => errorDiv.remove(), 3000);
         }
 
-        // Initialize the page
-        fetchProducts(currentFilters.page);
+        window.applyFilters = applyFilters;
+
+        applyFilters(currentFilters.page);
     });
 </script>
 

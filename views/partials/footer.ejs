@@ -92,7 +92,7 @@
     });
 
     function updateCartButton(button) {
-        button.innerHTML = '<i class="fas fa-shopping-cart"></i> Go to Cart';
+        button.innerHTML = '<i class="fas fa-shopping-cart"></i>';
         button.classList.add('in-cart');
         button.removeAttribute('onclick');
         button.addEventListener('click', () => window.location.href = '/cart');

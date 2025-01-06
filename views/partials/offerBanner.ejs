@@ -1,0 +1,32 @@
+<!-- Category Offer Banner -->
+<% if (locals.categories && categories.some(cat => cat.offer && cat.offer.isActive)) { %>
+    <div class="offer-banner-container">
+        <div class="offer-banner-wrapper">
+            <div class="offer-banner">
+                <% categories.filter(cat => cat.offer && cat.offer.isActive).forEach(category => { %>
+                    <div class="offer-banner-item">
+                        <span class="offer-category-name"><%= category.name %></span>
+                        <span class="offer-discount">
+                            <%= category.offer.discountType === 'percentage' ? 
+                                `${category.offer.discountValue}% OFF` : 
+                                `₹${category.offer.discountValue} OFF` %>
+                        </span>
+                        <% if (category.offer.maxDiscountAmount) { %>
+                            <span class="offer-max-discount">Up to ₹<%= category.offer.maxDiscountAmount %></span>
+                        <% } %>
+                        <% if (category.offer.endDate) { %>
+                            <span class="offer-timer" data-end="<%= category.offer.endDate %>">
+                                Ends in: <span class="countdown"></span>
+                            </span>
+                        <% } %>
+                    </div>
+                <% }); %>
+            </div>
+        </div>
+    </div>
+    <style>
+        .shop-page-header {
+            margin-top: 0 !important;
+        }
+    </style>
+<% } %>

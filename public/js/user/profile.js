@@ -17,7 +17,6 @@ function updateOrdersUI(orders, pagination) {
     const ordersList = document.querySelector('.orders-list');
     if (!ordersList) return;
 
-    // Clear existing orders
     ordersList.innerHTML = '';
 
     if (orders.length === 0) {
@@ -34,7 +33,6 @@ function updateOrdersUI(orders, pagination) {
         return;
     }
 
-    // Create table for orders
     const table = document.createElement('table');
     table.className = 'orders-table';
     table.innerHTML = `
@@ -145,7 +143,6 @@ async function viewOrderDetails(orderId) {
         if (data.success) {
             const order = data.order;
             
-            // Create the modal content
             const modalContent = `
                 <div class="order-details-modal">
                     <div class="order-header">
@@ -224,7 +221,6 @@ async function viewOrderDetails(orderId) {
                 </div>
             `;
 
-            // Show the modal using SweetAlert2
             Swal.fire({
                 title: '',
                 html: modalContent,
@@ -255,72 +251,7 @@ async function viewOrderDetails(orderId) {
     }
 }
 
-// Prevent event bubbling for action buttons
-function cancelOrder(orderId, event) {
-    event.stopPropagation();
-    // Your existing cancel order logic
-}
 
-async function initiateReturn(orderId, event) {
-    event.stopPropagation();
-    
-    try {
-        const { value: reason } = await Swal.fire({
-            title: 'Return Order',
-            input: 'textarea',
-            inputLabel: 'Please provide a reason for return',
-            inputPlaceholder: 'Enter your reason here...',
-            showCancelButton: true,
-            confirmButtonColor: '#3085d6',
-            cancelButtonColor: '#d33',
-            confirmButtonText: 'Submit Return Request',
-            background: '#2A2A2A',
-            color: '#fff',
-            inputValidator: (value) => {
-                if (!value) {
-                    return 'You need to provide a reason for return!';
-                }
-            },
-            customClass: {
-                input: 'swal2-textarea dark-theme'
-            }
-        });
-
-        if (reason) {
-            const response = await fetch(`/orders/${orderId}/return`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ reason })
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-                await Swal.fire({
-                    title: 'Return Request Submitted!',
-                    text: 'Your return request has been submitted for admin approval. You will be notified once it is processed.',
-                    icon: 'success',
-                    background: '#2A2A2A',
-                    color: '#fff'
-                });
-                loadOrders(currentPage);
-            } else {
-                throw new Error(data.message || 'Failed to submit return request');
-            }
-        }
-    } catch (error) {
-        console.error('Return Request Error:', error);
-        await Swal.fire({
-            title: 'Error!',
-            text: error.message || 'Failed to submit return request. Please try again later.',
-            icon: 'error',
-            background: '#2A2A2A',
-            color: '#fff'
-        });
-    }
-}
 
 async function editModal(addressId) {
     const address = window.addresses.address.find(addr => addr._id === addressId);

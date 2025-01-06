@@ -13,7 +13,14 @@ const loadCart = async (req, res) => {
         }
 
         const cart = await Cart.findOne({ userId })
-            .populate('items.productId', 'name regularPrice salePrice images _id')
+            .populate({
+                path: 'items.productId',
+                select: 'name regularPrice salePrice images category',
+                populate: {
+                    path: 'category',
+                    select: 'offer'
+                }
+            })
             .lean();
 
         let cartData = {
@@ -25,21 +32,40 @@ const loadCart = async (req, res) => {
         };
 
         if (cart && cart.items) {
-            cartData.items = cart.items.map((item) => ({
-                _id: item._id,
-                product: {
-                    name: item.productId.name,
-                    regularPrice: item.productId.regularPrice,
-                    salePrice: item.productId.salePrice,
-                    images: [item.productId.images[0]],
-                    productId: item.productId._id
-                },
-                quantity: item.quantity
-            }));
+            cartData.items = cart.items.map((item) => {
+                let effectivePrice = item.productId.salePrice < item.productId.regularPrice ? 
+                    item.productId.salePrice : item.productId.regularPrice;
+                
+                // Apply category offer if available
+                if (item.productId.category && item.productId.category.offer && item.productId.category.offer.isActive) {
+                    const offer = item.productId.category.offer;
+                    if (offer.discountType === 'percentage') {
+                        const discountAmount = (effectivePrice * offer.discountValue) / 100;
+                        effectivePrice = Math.max(effectivePrice - Math.min(discountAmount, offer.maxDiscountAmount || discountAmount), 0);
+                    } else {
+                        effectivePrice = Math.max(effectivePrice - offer.discountValue, 0);
+                    }
+                }
+                
+                return {
+                    _id: item._id,
+                    product: {
+                        name: item.productId.name,
+                        regularPrice: item.productId.regularPrice,
+                        salePrice: item.productId.salePrice,
+                        images: [item.productId.images[0]],
+                        productId: item.productId._id,
+                        category: item.productId.category
+                    },
+                    quantity: item.quantity,
+                    totalRegularPrice: item.productId.regularPrice * item.quantity,
+                    totalSalePrice: item.productId.salePrice * item.quantity,
+                    totalPrice: effectivePrice * item.quantity
+                };
+            });
 
             cartData.items.forEach(item => {
-                const price = item.product.salePrice || item.product.regularPrice;
-                cartData.subtotal += price * item.quantity;
+                cartData.subtotal += item.totalPrice;
                 cartData.itemCount += item.quantity;
             });
 
@@ -195,24 +221,59 @@ const updateCartQuantity = async (req, res) => {
 
         await cart.save();
 
-        await cart.populate('items.productId');
+        await cart.populate({
+            path: 'items.productId',
+            populate: {
+                path: 'category',
+                select: 'offer'
+            }
+        });
 
         let subtotal = 0;
         let itemCount = 0;
 
         cart.items.forEach(item => {
-            const price = item.productId.salePrice || item.productId.regularPrice;
-            subtotal += price * item.quantity;
+            let effectivePrice = item.productId.salePrice < item.productId.regularPrice ? 
+                item.productId.salePrice : item.productId.regularPrice;
+            
+            if (item.productId.category && item.productId.category.offer && item.productId.category.offer.isActive) {
+                const offer = item.productId.category.offer;
+                if (offer.discountType === 'percentage') {
+                    const discountAmount = (effectivePrice * offer.discountValue) / 100;
+                    effectivePrice = Math.max(effectivePrice - Math.min(discountAmount, offer.maxDiscountAmount || discountAmount), 0);
+                } else {
+                    effectivePrice = Math.max(effectivePrice - offer.discountValue, 0);
+                }
+            }
+            
+            subtotal += effectivePrice * item.quantity;
             itemCount += item.quantity;
         });
 
         const tax = subtotal * 0.05;
         const total = subtotal + tax;
 
+        const updatedItem = cart.items[itemIndex];
+        let itemPrice = updatedItem.productId.salePrice < updatedItem.productId.regularPrice ? 
+            updatedItem.productId.salePrice : updatedItem.productId.regularPrice;
+        
+        if (updatedItem.productId.category && updatedItem.productId.category.offer && updatedItem.productId.category.offer.isActive) {
+            const offer = updatedItem.productId.category.offer;
+            if (offer.discountType === 'percentage') {
+                const discountAmount = (itemPrice * offer.discountValue) / 100;
+                itemPrice = Math.max(itemPrice - Math.min(discountAmount, offer.maxDiscountAmount || discountAmount), 0);
+            } else {
+                itemPrice = Math.max(itemPrice - offer.discountValue, 0);
+            }
+        }
+
+        const itemTotal = itemPrice * newQuantity;
+
         res.json({
             success: true,
             cartCount: itemCount,
             itemSubtotal: subtotal,
+            itemTotal: itemTotal,
             tax: tax,
             total: total,
             toast: { type: 'success', message: 'Cart updated successfully' }

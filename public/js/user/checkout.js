@@ -1,41 +1,75 @@
-// Global variable to store selected address ID
-let selectedAddressId = null;
-
-// Global variable to track order processing state
 let isProcessingOrder = false;
 
-// Make selectAddress function global
-window.selectAddress = function() {
-    const selectedOption = document.querySelector('.address-option.selected');
-    if (selectedOption) {
-        const addressId = selectedOption.dataset.addressId;
-        const addressDetails = selectedOption.querySelector('.address-details').innerHTML;
+window.selectAddress = function(addressId) {
+    const address = addresses.find(addr => addr._id === addressId);
+    if (address) {
+        const selectedAddressHtml = `
+            <h5>${address.name}</h5>
+            <p>${address.street}</p>
+            <p>${address.city}, ${address.state} ${address.pinCode}</p>
+            <p class="mb-0"><i class="fas fa-phone"></i> ${address.phoneNumber}</p>
+        `;
         
-        // Update the preview
-        document.querySelector('.selected-address-details').innerHTML = addressDetails;
-        
-        // Update the hidden input
+        document.querySelector('.selected-address-details').innerHTML = selectedAddressHtml;
         document.querySelector('input[name="selectedAddress"]').value = addressId;
+
+        const addressListModal = document.getElementById('addressListModal');
+        const modal = bootstrap.Modal.getInstance(addressListModal);
+        if (modal) {
+            modal.hide();
+        }
+    }
+};
+
+window.editAddress = function(addressId) {
+    const address = addresses.find(addr => addr._id === addressId);
+    if (address) {
+        const addressListModal = bootstrap.Modal.getInstance(document.getElementById('addressListModal'));
+        if (addressListModal) {
+            addressListModal.hide();
+        }
+
+        document.getElementById('editAddressId').value = address._id;
+        document.getElementById('editFullName').value = address.name;
+        document.getElementById('editPhone').value = address.phoneNumber;
+        document.getElementById('editStreet').value = address.street;
+        document.getElementById('editCity').value = address.city;
+        document.getElementById('editState').value = address.state;
+        document.getElementById('editCountry').value = address.country;
+        document.getElementById('editPinCode').value = address.pinCode;
+        document.getElementById('editAddressType').value = address.addressType;
         
-        // Close the modal
-        const modal = bootstrap.Modal.getInstance(document.getElementById('addressListModal'));
-        modal.hide();
+        const editModal = new bootstrap.Modal(document.getElementById('editAddressModal'));
+        editModal.show();
     }
 };
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Address selection in modal
+    const modals = ['addressListModal', 'addAddressModal', 'editAddressModal'];
+    
+    modals.forEach(modalId => {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.addEventListener('hidden.bs.modal', function () {
+                if (!document.querySelector('.modal.show')) {
+                    document.body.classList.remove('modal-open');
+                    const backdrop = document.querySelector('.modal-backdrop');
+                    if (backdrop) {
+                        backdrop.remove();
+                    }
+                }
+            });
+        }
+    });
+
     const addressOptions = document.querySelectorAll('.address-option');
     addressOptions.forEach(option => {
         option.addEventListener('click', function() {
-            // Remove selected class from all options
             addressOptions.forEach(opt => opt.classList.remove('selected'));
-            // Add selected class to clicked option
             this.classList.add('selected');
         });
     });
 
-    // Place order button click handler
     const placeOrderBtn = document.getElementById('placeOrderBtn');
     if (placeOrderBtn) {
         placeOrderBtn.addEventListener('click', placeOrder);
@@ -51,7 +85,6 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 async function placeOrder() {
-    // Prevent multiple submissions
     if (isProcessingOrder) {
         showToast('Order is already being processed', 'info');
         return;
@@ -65,7 +98,11 @@ async function placeOrder() {
         return;
     }
 
-    // Check wallet balance if wallet payment is selected
+        if (!selectedPayment) {
+            showToast('Please select a payment method', 'error');
+            return;
+        }
+
     if (selectedPayment === 'wallet') {
         const walletBalanceText = document.querySelector('label[for="wallet"]').textContent.match(/₹([\d.]+)/);
         const orderTotalText = document.querySelector('.total-amount').textContent.match(/₹([\d.]+)/);
@@ -109,7 +146,6 @@ async function placeOrder() {
         }
 
         if (selectedPayment === 'razorpay') {
-            // Handle Razorpay payment
             const options = {
                 key: data.razorpayOrder.key,
                 amount: data.razorpayOrder.amount,
@@ -168,7 +204,6 @@ async function placeOrder() {
             const rzp = new Razorpay(options);
             rzp.open();
         } else {
-            // For COD and wallet payments
             window.location.href = `/order-success/${data.orderId}`;
         }
     } catch (error) {
@@ -181,8 +216,14 @@ async function placeOrder() {
 }
 
 function showToast(message, type = 'success') {
-    // Implement your toast notification here
-    alert(message);
+    Toastify({
+        text: message,
+        duration: 3000,
+        gravity: "top",
+        position: "center",
+        backgroundColor: type === 'error' ? "#ff0000" : "#4CAF50",
+        stopOnFocus: true
+    }).showToast();
 }
 
 async function addAddress(event) {
@@ -192,8 +233,6 @@ async function addAddress(event) {
         const addAddressForm = document.getElementById('addAddressForm');
         const formData = new FormData(addAddressForm);
 
-        // Log form data for debugging
-        console.log('Add Address Form Data:');
         for (let [key, value] of formData.entries()) {
             console.log(`${key}: ${value}`);
         }
@@ -248,17 +287,14 @@ async function addAddress(event) {
 
 async function editModal(addressId) {
     try {
-        // Get the address from the addresses array in the page
         const address = addresses.find(addr => addr._id === addressId);
         
         if (!address) {
             throw new Error('Address not found');
         }
 
-        // Set the hidden address ID field
         document.getElementById('editAddressId').value = addressId;
 
-        // Populate the edit form
         document.getElementById('editFullName').value = address.name;
         document.getElementById('editPhone').value = address.phoneNumber;
         document.getElementById('editStreet').value = address.street;
@@ -269,7 +305,6 @@ async function editModal(addressId) {
         document.getElementById('editAddressType').value = address.addressType;
         document.getElementById('editDefaultAddress').checked = address.isDefault;
 
-        // Close the address list modal and show edit modal
         const addressListModal = bootstrap.Modal.getInstance(document.getElementById('addressListModal'));
         if (addressListModal) {
             addressListModal.hide();
@@ -289,7 +324,6 @@ async function updateAddress(event) {
         const formData = new FormData(editAddressForm);
         const addressId = document.getElementById('editAddressId').value;
 
-        // Log form data for debugging
         console.log('Edit Address Form Data:');
         for (let [key, value] of formData.entries()) {
             console.log(`${key}: ${value}`);
@@ -307,7 +341,7 @@ async function updateAddress(event) {
                 data.name = value.trim();
             } else if (key === 'phone') {
                 data.phoneNumber = value.trim();
-            } else if (key !== '_id') { // Exclude _id from the request body
+            } else if (key !== '_id') { 
                 data[key] = value.trim();
             }
         });
@@ -458,4 +492,160 @@ async function getAddresses() {
         console.error('Error fetching addresses:', error);
         return [];
     }
+}
+
+async function applyCoupon(couponCode) {
+    try {
+        const response = await fetch('/apply-coupon', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ code: couponCode })
+        });
+
+        const result = await response.json();
+        
+        const couponMessage = document.getElementById('couponMessage');
+        const couponInput = document.getElementById('couponCode');
+        const applyButton = document.getElementById('applyCouponBtn');
+        
+        if (!couponMessage || !couponInput || !applyButton) {
+            console.error('Required elements not found');
+            return;
+        }
+
+        if (result.success) {
+            const data = result.data;
+            
+            const subtotalElement = document.getElementById('subtotal');
+            if (subtotalElement) {
+                subtotalElement.textContent = `₹${data.subtotal.toFixed(2)}`;
+            }
+            
+            let discountRow = document.querySelector('.discount-row');
+            if (!discountRow) {
+                discountRow = document.createElement('div');
+                discountRow.classList.add('summary-item', 'discount-row');
+                const subtotalElement = document.querySelector('.summary-item');
+                if (subtotalElement && subtotalElement.parentNode) {
+                    subtotalElement.parentNode.insertBefore(discountRow, subtotalElement.nextSibling);
+                }
+            }
+
+            if (data.discountAmount > 0) {
+                discountRow.innerHTML = `
+                    <span class="summary-label">
+                        Discount${data.coupon ? ` (${data.coupon.code})` : ''}
+                        <button onclick="removeCoupon()" class="btn btn-link btn-sm text-danger p-0 ms-2">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </span>
+                    <span class="summary-value text-success">-₹${data.discountAmount.toFixed(2)}</span>
+                `;
+                discountRow.style.display = 'flex';
+            } else {
+                discountRow.style.display = 'none';
+            }
+            
+            const taxElement = document.getElementById('tax');
+            if (taxElement) {
+                taxElement.textContent = `₹${data.tax.toFixed(2)}`;
+            }
+            
+            const totalElement = document.getElementById('total');
+            if (totalElement) {
+                totalElement.textContent = `₹${data.total.toFixed(2)}`;
+            }
+
+            couponMessage.textContent = result.message;
+            couponMessage.className = 'mt-2 small text-success';
+
+            couponInput.value = data.coupon ? data.coupon.code : couponCode.toUpperCase();
+            couponInput.disabled = true;
+
+            applyButton.disabled = true;
+
+            const modal = bootstrap.Modal.getInstance(document.getElementById('couponsModal'));
+            if (modal) {
+                modal.hide();
+            }
+
+            if (window.razorpayOptions) {
+                window.razorpayOptions.amount = Math.round(data.total * 100);
+            }
+
+        } else {
+            couponMessage.textContent = result.message;
+            couponMessage.className = 'mt-2 small text-danger';
+            
+            couponInput.value = '';
+            couponInput.disabled = false;
+            applyButton.disabled = false;
+        }
+    } catch (error) {
+        console.error('Error applying coupon:', error);
+        const couponMessage = document.getElementById('couponMessage');
+        const couponInput = document.getElementById('couponCode');
+        const applyButton = document.getElementById('applyCouponBtn');
+        
+        if (couponMessage) {
+            couponMessage.textContent = 'Failed to apply coupon. Please try again.';
+            couponMessage.className = 'mt-2 small text-danger';
+        }
+        
+        if (couponInput && applyButton) {
+            couponInput.value = '';
+            couponInput.disabled = false;
+            applyButton.disabled = false;
+        }
+    }
+}
+
+async function removeCoupon() {
+    try {
+        const response = await fetch('/remove-coupon', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            }
+        });
+
+        const result = await response.json();
+        if (result.success) {
+            location.reload();
+        } else {
+            console.error('Failed to remove coupon:', result.message);
+        }
+    } catch (error) {
+        console.error('Error removing coupon:', error);
+    }
+}
+
+function updateOrderSummary(data) {
+    document.querySelector('.summary-item:nth-child(1) .summary-value').textContent = 
+        `₹${data.subtotal.toFixed(2)}`;
+    
+    document.querySelector('.summary-item:nth-child(2) .summary-value').textContent = 
+        `₹${data.tax.toFixed(2)}`;
+    
+    const discountElement = document.querySelector('.summary-item.discount');
+    if (data.discount > 0) {
+        if (!discountElement) {
+            const discountHtml = `
+                <div class="summary-item discount">
+                    <span class="summary-label">Discount</span>
+                    <span class="summary-value text-success">-₹${data.discount.toFixed(2)}</span>
+                </div>
+            `;
+            document.querySelector('.summary-item:nth-child(2)').insertAdjacentHTML('afterend', discountHtml);
+        } else {
+            discountElement.querySelector('.summary-value').textContent = `-₹${data.discount.toFixed(2)}`;
+        }
+    }
+    
+    document.querySelector('.summary-item:last-child .summary-value').textContent = 
+        `₹${data.total.toFixed(2)}`;
 }
