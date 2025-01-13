@@ -76,3 +76,147 @@ body {
 .modal-footer {
     border-top: 2px solid var(--light-bg);
 }
+
+/* Wishlist button styles */
+.wishlist-btn {
+    border: none;
+    background: transparent;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+}
+
+.wishlist-btn:hover,
+.wishlist-btn:focus,
+.wishlist-btn:active {
+    border: none;
+    background: transparent;
+    text-decoration: none;
+    outline: none;
+}
+
+.wishlist-btn i {
+    font-size: 1.25rem;
+    color: #dc3545;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    line-height: 1;
+}
+
+.wishlist-btn:hover i {
+    transform: scale(1.1);
+}
+
+.wishlist-btn.active i {
+    animation: heartPop 0.3s ease;
+}
+
+@keyframes heartPop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+
+/* Wishlist button styles */
+.wishlist-btn {
+    border: none;
+    background: transparent;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+}
+
+.wishlist-btn:hover,
+.wishlist-btn:focus,
+.wishlist-btn:active {
+    border: none;
+    background: transparent;
+    text-decoration: none;
+    outline: none;
+}
+
+.wishlist-btn i {
+    font-size: 1.25rem;
+    color: #dc3545;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    line-height: 1;
+}
+
+.wishlist-btn:hover i {
+    transform: scale(1.1);
+}
+
+.wishlist-btn.active i {
+    animation: heartPop 0.3s ease;
+}
+
+@keyframes heartPop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+
+/* Wishlist button styles */
+.wishlist-btn {
+    border: none;
+    background: transparent;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+}
+
+.wishlist-btn:hover,
+.wishlist-btn:focus,
+.wishlist-btn:active {
+    border: none;
+    background: transparent;
+    text-decoration: none;
+    outline: none;
+}
+
+.wishlist-btn i {
+    font-size: 1.25rem;
+    color: #dc3545;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    line-height: 1;
+}
+
+.wishlist-btn:hover i {
+    transform: scale(1.1);
+}
+
+.wishlist-btn.active i {
+    animation: heartPop 0.3s ease;
+}
+
+@keyframes heartPop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}

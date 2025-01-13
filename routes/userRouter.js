@@ -79,6 +79,17 @@ router.get('/orders', userAuth.isLoggedIn, profileController.getOrders);
 router.post('/apply-coupon', userAuth.isLoggedIn, couponController.applyCoupon);
 router.post('/remove-coupon', userAuth.isLoggedIn, couponController.removeCoupon);
 
+// Payment retry route
+router.post('/retry-payment/:orderId', userAuth.isLoggedIn, checkoutController.retryPayment);
+
+// Payment Failed Route
+router.get('/payment-failed/:orderId', userAuth.isLoggedIn, checkoutController.paymentFailed);
+
+// Payment status update route
+router.post('/update-payment-status/:orderId', userAuth.isLoggedIn, checkoutController.updatePaymentStatus);
+
+router.get('/download-invoice/:orderId', userAuth.isLoggedIn, checkoutController.downloadInvoice);
+
 router.get("/logout", userAuth.isLoggedIn, userController.logout);
 
 module.exports = router;

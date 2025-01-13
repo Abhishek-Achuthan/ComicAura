@@ -4,14 +4,12 @@ const Order = require('../../models/orderSchema');
 const Product = require('../../models/productSchema');
 const CategoryOffer = require('../../models/categoryOfferModel');
 
-// Calculate the best discount between category offer and coupon
 const calculateBestDiscount = async (cart, coupon) => {
     try {
-        let categoryDiscounts = new Map(); // To store category-wise discounts
+        let categoryDiscounts = new Map(); 
         let totalCategoryDiscount = 0;
         let subtotalBeforeDiscount = 0;
 
-        // Calculate subtotal and category discounts
         for (const item of cart.items) {
             const product = await Product.findById(item.productId._id).populate('category');
             if (!product || !product.category) continue;
@@ -20,7 +18,6 @@ const calculateBestDiscount = async (cart, coupon) => {
             const itemSubtotal = price * Number(item.quantity);
             subtotalBeforeDiscount += itemSubtotal;
 
-            // Check for category offer
             const categoryOffer = await CategoryOffer.findOne({
                 category: product.category._id,
                 isActive: true,
@@ -39,28 +36,23 @@ const calculateBestDiscount = async (cart, coupon) => {
             }
         }
 
-        // Calculate coupon discount
         let couponDiscount = 0;
         if (coupon) {
             if (coupon.discountType === 'percentage') {
                 couponDiscount = (subtotalBeforeDiscount * Number(coupon.discountAmount)) / 100;
-                // Apply maximum discount cap for percentage discounts
                 if (coupon.maxDiscountAmount && couponDiscount > coupon.maxDiscountAmount) {
                     couponDiscount = Number(coupon.maxDiscountAmount);
                 }
             } else {
-                // For fixed amount discounts
                 couponDiscount = Math.min(Number(coupon.discountAmount), subtotalBeforeDiscount);
             }
         }
 
-        // Determine best discount
         let bestDiscount = {
             type: totalCategoryDiscount > couponDiscount ? 'category' : 'coupon',
             amount: Math.max(totalCategoryDiscount, couponDiscount)
         };
 
-        // Ensure discount doesn't exceed subtotal
         bestDiscount.amount = Math.min(bestDiscount.amount, subtotalBeforeDiscount);
 
         return {
@@ -74,7 +66,6 @@ const calculateBestDiscount = async (cart, coupon) => {
     }
 };
 
-// Apply coupon to cart
 const applyCoupon = async (req, res) => {
     try {
         const { code } = req.body;
@@ -87,7 +78,6 @@ const applyCoupon = async (req, res) => {
             });
         }
 
-        // Find the coupon
         const coupon = await Coupon.findOne({ 
             code: code.toUpperCase(),
             isActive: true,
@@ -102,7 +92,6 @@ const applyCoupon = async (req, res) => {
             });
         }
 
-        // Check usage limit
         if (coupon.usedCount >= coupon.usageLimit) {
             return res.status(400).json({
                 success: false,
@@ -110,7 +99,6 @@ const applyCoupon = async (req, res) => {
             });
         }
 
-        // Get cart and calculate discounts
         const cart = await Cart.findOne({ userId }).populate('items.productId');
         if (!cart || cart.items.length === 0) {
             return res.status(400).json({
@@ -119,10 +107,8 @@ const applyCoupon = async (req, res) => {
             });
         }
 
-        // Calculate all possible discounts
         const discounts = await calculateBestDiscount(cart, coupon);
 
-        // Check minimum purchase requirement
         if (discounts.subtotalBeforeDiscount < coupon.minimumPurchase) {
             return res.status(400).json({
                 success: false,
@@ -130,7 +116,6 @@ const applyCoupon = async (req, res) => {
             });
         }
 
-        // Check if user has already used this coupon
         const hasUsedCoupon = await Order.findOne({
             userId,
             'coupon.code': code.toUpperCase()
@@ -143,14 +128,12 @@ const applyCoupon = async (req, res) => {
             });
         }
 
-        // Apply the best discount
         const bestDiscount = discounts.bestDiscount;
         const taxRate = 0.05;
         const subtotalAfterDiscount = discounts.subtotalBeforeDiscount - bestDiscount.amount;
         const tax = Number((subtotalAfterDiscount * taxRate).toFixed(2));
         const total = Number((subtotalAfterDiscount + tax).toFixed(2));
 
-        // Store coupon in cart if it gives better discount
         if (bestDiscount.type === 'coupon') {
             cart.coupon = {
                 code: coupon.code,
@@ -184,7 +167,6 @@ const applyCoupon = async (req, res) => {
     }
 };
 
-// Remove coupon from cart
 const removeCoupon = async (req, res) => {
     try {
         const userId = req.session.userId;
@@ -197,16 +179,13 @@ const removeCoupon = async (req, res) => {
             });
         }
 
-        // Calculate category discounts after removing coupon
         const discounts = await calculateBestDiscount(cart, null);
         const bestDiscount = discounts.bestDiscount;
         const taxRate = 0.05;
 
-        // Remove coupon from cart
         cart.coupon = undefined;
         await cart.save();
 
-        // Calculate new totals with category discounts
         const subtotalAfterDiscount = discounts.subtotalBeforeDiscount - bestDiscount.amount;
         const tax = Number((subtotalAfterDiscount * taxRate).toFixed(2));
         const total = Number((subtotalAfterDiscount + tax).toFixed(2));

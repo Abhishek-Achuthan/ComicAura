@@ -172,24 +172,19 @@ async function placeOrder() {
                         if (verifyData.success) {
                             window.location.href = `/order-success/${data.orderId}`;
                         } else {
-                            showToast('Payment verification failed', 'error');
-                            isProcessingOrder = false;
-                            placeOrderBtn.disabled = false;
-                            placeOrderBtn.innerHTML = 'Place Order';
+                            await updatePaymentStatus(data.orderId, 'Failed');
+                            window.location.href = `/payment-failed/${data.orderId}`;
                         }
                     } catch (error) {
                         console.error('Payment verification error:', error);
-                        showToast('Payment verification failed', 'error');
-                        isProcessingOrder = false;
-                        placeOrderBtn.disabled = false;
-                        placeOrderBtn.innerHTML = 'Place Order';
+                        await updatePaymentStatus(data.orderId, 'Failed');
+                        window.location.href = `/payment-failed/${data.orderId}`;
                     }
                 },
                 modal: {
-                    ondismiss: function() {
-                        isProcessingOrder = false;
-                        placeOrderBtn.disabled = false;
-                        placeOrderBtn.innerHTML = 'Place Order';
+                    ondismiss: async function() {
+                        await updatePaymentStatus(data.orderId, 'Failed');
+                        window.location.href = `/payment-failed/${data.orderId}`;
                     }
                 },
                 prefill: {
@@ -202,6 +197,13 @@ async function placeOrder() {
             };
 
             const rzp = new Razorpay(options);
+            
+            rzp.on('payment.failed', async function(response) {
+                console.log('Payment failed:', response.error);
+                await updatePaymentStatus(data.orderId, 'Failed', response.error);
+                window.location.href = `/payment-failed/${data.orderId}`;
+            });
+
             rzp.open();
         } else {
             window.location.href = `/order-success/${data.orderId}`;
@@ -212,6 +214,24 @@ async function placeOrder() {
         isProcessingOrder = false;
         placeOrderBtn.disabled = false;
         placeOrderBtn.innerHTML = 'Place Order';
+    }
+}
+
+async function updatePaymentStatus(orderId, status, error = null) {
+    try {
+        const response = await fetch(`/update-payment-status/${orderId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ status, error })
+        });
+        
+        if (!response.ok) {
+            console.error('Failed to update payment status');
+        }
+    } catch (err) {
+        console.error('Error updating payment status:', err);
     }
 }
 
@@ -257,7 +277,6 @@ async function addAddress(event) {
         const isDefaultCb = document.getElementById('defaultAddress');
         data.isDefault = isDefaultCb.checked;
 
-        console.log('Data being sent:', data);
 
         const response = await fetch("/addAddress", {
             method: "POST",
@@ -353,8 +372,6 @@ async function updateAddress(event) {
             throw new Error("Address ID is missing");
         }
 
-        console.log('Update data being sent:', data);
-        console.log('Address ID:', addressId);
 
         const response = await fetch(`/profile/${addressId}`, {
             method: "PATCH",
@@ -412,8 +429,6 @@ async function deleteAddress(addressId) {
 function validateAddressForm(formData) {
     const errors = [];
     
-    // Log validation input
-    console.log('Validating form data:');
     for (let [key, value] of formData.entries()) {
         console.log(`${key}: ${value}`);
     }
@@ -424,7 +439,6 @@ function validateAddressForm(formData) {
     }
 
     const phone = formData.get('phone');
-    console.log('Phone number being validated:', phone);
     
     if (!phone) {
         errors.push('Phone number is required');

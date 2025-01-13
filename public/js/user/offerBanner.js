@@ -24,7 +24,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Show notification for new offers
     function showNewOfferNotification(offer) {
         const notification = document.createElement('div');
         notification.className = 'offer-notification animate__animated animate__fadeInRight';
@@ -42,21 +41,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
         document.body.appendChild(notification);
 
-        // Remove notification after 5 seconds
         setTimeout(() => {
             notification.classList.add('animate__fadeOutRight');
             setTimeout(() => notification.remove(), 500);
         }, 5000);
     }
 
-    // Check for new offers periodically
     let knownOffers = new Set();
     function checkNewOffers() {
         document.querySelectorAll('.offer-banner-item').forEach(offer => {
             const offerId = offer.dataset.offerId;
             if (!knownOffers.has(offerId)) {
                 knownOffers.add(offerId);
-                // Only show notification for truly new offers
                 if (knownOffers.size > 1) {
                     const offerData = {
                         categoryName: offer.querySelector('.offer-category-name').textContent,
@@ -72,13 +68,8 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Initialize
     updateCountdowns();
     checkNewOffers();
-
-    // Update countdowns every minute
     setInterval(updateCountdowns, 60000);
-
-    // Check for new offers every 5 minutes
     setInterval(checkNewOffers, 300000);
 });

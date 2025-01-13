@@ -1,6 +1,5 @@
 const Coupon = require('../../models/couponModel');
 
-// Load coupon management page
 const loadCoupon = async (req, res) => {
     try {
         const coupons = await Coupon.find().sort({ createdAt: -1 });
@@ -15,7 +14,6 @@ const loadCoupon = async (req, res) => {
     }
 };
 
-// Create new coupon
 const createCoupon = async (req, res) => {
     try {
         const {
@@ -30,7 +28,6 @@ const createCoupon = async (req, res) => {
             description
         } = req.body;
 
-        // Validate coupon code format
         const codeRegex = /^[A-Z0-9]{6,12}$/;
         if (!codeRegex.test(code)) {
             return res.status(400).json({
@@ -39,7 +36,6 @@ const createCoupon = async (req, res) => {
             });
         }
 
-        // Check if coupon code already exists
         const existingCoupon = await Coupon.findOne({ code });
         if (existingCoupon) {
             return res.status(400).json({
@@ -48,7 +44,6 @@ const createCoupon = async (req, res) => {
             });
         }
 
-        // Validate dates
         const start = new Date(startDate);
         const end = new Date(endDate);
         if (start >= end) {
@@ -58,7 +53,6 @@ const createCoupon = async (req, res) => {
             });
         }
 
-        // Validate amounts
         if (discountType === 'percentage' && (discountAmount <= 0 || discountAmount > 100)) {
             return res.status(400).json({
                 success: false,
@@ -206,7 +200,6 @@ const toggleCouponStatus = async (req, res) => {
     }
 };
 
-// Delete coupon
 const deleteCoupon = async (req, res) => {
     try {
         const { id } = req.params;
@@ -232,7 +225,6 @@ const deleteCoupon = async (req, res) => {
     }
 };
 
-// Generate unique coupon code
 const generateCouponCode = async (req, res) => {
     try {
         const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -245,7 +237,6 @@ const generateCouponCode = async (req, res) => {
                 code += characters.charAt(Math.floor(Math.random() * characters.length));
             }
 
-            // Check if code exists
             const existingCoupon = await Coupon.findOne({ code });
             if (!existingCoupon) {
                 isUnique = true;

@@ -393,5 +393,31 @@
             watchOverflow: true
         });
     });
+    async function toggleWishlist(productId) {
+    try {
+        const response = await fetch('/wishlist/add', {
+            method: 'POST',
+            headers:{
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({productId})
+        });
+
+        const result = await response.json();
+
+      if (result.success) { 
+        await Swal.fire({
+            icon: 'success',
+            title: 'Success!',
+            text: result.message,
+            showConfirmButton: false,
+            timer: 1500
+        });
+      }
+        
+    } catch (error) {
+        console.log(error);
+    }
+}
 </script>
 <script src="/js/user/productDetail.js"></script>

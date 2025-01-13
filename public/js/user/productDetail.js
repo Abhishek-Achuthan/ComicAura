@@ -1,3 +1,4 @@
+
 document.addEventListener('DOMContentLoaded', function() {
     const galleryThumbs = new Swiper('.gallery-thumbs', {
         spaceBetween: 10,
@@ -61,3 +62,4 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+

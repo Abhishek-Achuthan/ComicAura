@@ -1,13 +1,5 @@
-
-window.toggleWishlist = async function(productId, button) {
+async function toggleWishlist(productId, button) {
     try {
-        // Debug: Initial state
-        console.log('Initial button state:', {
-            isActive: button.classList.contains('active'),
-            buttonClasses: button.className,
-            iconClasses: button.querySelector('i').className
-        });
-
         const isInWishlist = button.classList.contains('active');
         const endpoint = isInWishlist ? '/wishlist/remove' : '/wishlist/add';
 
@@ -21,7 +13,6 @@ window.toggleWishlist = async function(productId, button) {
         });
 
         const data = await response.json();
-        console.log('Server Response:', data);  // Debug: Server response
 
         if (!response.ok) {
             if (response.status === 401) {
@@ -36,11 +27,10 @@ window.toggleWishlist = async function(productId, button) {
             const icon = button.querySelector('i');
             
             if (button.classList.contains('active')) {
-                icon.className = 'fas fa-heart'; // Solid filled heart
+                icon.className = 'bi bi-heart-fill'; // Filled heart
             } else {
-                icon.className = 'far fa-heart'; // Regular outlined heart
+                icon.className = 'bi bi-heart'; // Outlined heart
             }
-
 
             const Toast = Swal.mixin({
                 toast: true,
@@ -59,13 +49,19 @@ window.toggleWishlist = async function(productId, button) {
             throw new Error(data.message || 'Failed to update wishlist');
         }
     } catch (error) {
-        console.error('Error updating wishlist:', error);
-        Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: error.message || 'Failed to update wishlist',
+        console.error('Error:', error);
+        const Toast = Swal.mixin({
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 3000,
             background: '#1a1a1a',
             color: '#fff'
         });
+
+        Toast.fire({
+            icon: 'error',
+            title: error.message || 'Failed to update wishlist'
+        });
     }
-};
+}

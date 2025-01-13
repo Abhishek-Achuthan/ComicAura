@@ -575,7 +575,6 @@ const getOrders = async (req, res) => {
         const totalOrders = await Order.countDocuments({ userId });
         const totalPages = Math.ceil(totalOrders / limit);
 
-        // Fetch paginated orders with all necessary fields
         const orders = await Order.find({ userId })
             .populate({
                 path: 'items.productId',

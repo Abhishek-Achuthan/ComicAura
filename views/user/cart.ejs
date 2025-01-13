@@ -322,18 +322,17 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    <script src="/js/utils/toaster.js"></script>
     <script src="/js/user/pagination.js"></script>
     <script src="/js/user/cart.js"></script>
     
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Restore pagination initialization
             const cartItems = document.getElementsByClassName('cart-item');
             if (cartItems.length > 0) {
                 initializePagination(cartItems.length, 2, 'cartItems', 'cartPagination');
             }
             
-            // Toast configuration
             toastr.options = {
                 closeButton: true,
                 progressBar: true,
@@ -341,7 +340,6 @@
                 timeOut: 3000
             };
 
-            // Checkout button handler
             const checkoutBtn = document.getElementById('checkoutBtn');
             if (checkoutBtn) {
                 checkoutBtn.addEventListener('click', function() {
@@ -364,11 +362,9 @@
 
                         const data = await response.json();
                         if (data.success) {
-                            // Remove the item from DOM directly
                             const cartItem = button.closest('.cart-item');
                             cartItem.remove();
                             
-                            // Update pagination after removing item
                             const remainingItems = document.querySelectorAll('.cart-item');
                             if (remainingItems.length > 0) {
                                 initializePagination(remainingItems.length, 2, 'cartItems', 'cartPagination');
@@ -396,7 +392,6 @@
                 }, 0);
 
             }
-            // Server messages
             if (typeof serverMessages !== 'undefined') {
                 if (serverMessages.success) toastr.success(serverMessages.success);
                 if (serverMessages.error) toastr.error(serverMessages.error);
@@ -404,7 +399,6 @@
                 if (serverMessages.info) toastr.info(serverMessages.info);
             }
 
-            // Dropdown functionality
             const userDropdownBtn = document.getElementById('userDropdownBtn');
             const userDropdownContent = document.getElementById('userDropdownContent');
             const mobileSearch = document.getElementById('mobileSearch');
@@ -418,7 +412,6 @@
                 });
             }
 
-            // Close dropdowns when clicking outside
             document.addEventListener('click', function (e) {
                 if (userDropdownContent && !userDropdownBtn?.contains(e.target)) {
                     userDropdownContent.classList.remove('show');
@@ -428,7 +421,6 @@
                 }
             });
 
-            // Mobile navbar collapse
             const navLinks = document.querySelectorAll('.nav-link');
             const navbarCollapse = document.querySelector('.navbar-collapse');
             navLinks.forEach(link => {
@@ -439,7 +431,6 @@
                 });
             });
 
-            // Add event listeners for quantity buttons
             document.querySelectorAll('.quantity-btn').forEach(button => {
                 button.addEventListener('click', async function() {
                     const prodId = this.dataset.productId;
@@ -458,26 +449,21 @@
                         const data = await response.json();
 
                         if (data.success) {
-                            // Update quantity display
                             const currentQuantity = parseInt(quantityElement.textContent);
                             quantityElement.textContent = action === 'increase' ? currentQuantity + 1 : currentQuantity - 1;
 
-                            // Update cart count
                             const cartCountElement = document.querySelector('.cart-count');
                             if (cartCountElement) {
                                 cartCountElement.textContent = data.cartCount;
                             }
 
-                            // Update item total price
                             const cartItem = this.closest('.cart-item');
                             const priceContainer = cartItem.querySelector('.price-container');
                             
-                            // Update discounted price if it exists
                             const discountedPrice = priceContainer.querySelector('.discounted-price');
                             if (discountedPrice) {
                                 discountedPrice.textContent = `₹${data.itemTotal.toFixed(2)}`;
                             } else {
-                                // Update sale price or regular price
                                 const salePrice = priceContainer.querySelector('.sale-price');
                                 const regularPrice = priceContainer.querySelector('.regular-price');
                                 if (salePrice) {
@@ -487,7 +473,6 @@
                                 }
                             }
 
-                            // Update cart totals
                             document.getElementById('subtotal').textContent = `₹${data.itemSubtotal.toFixed(2)}`;
                             document.getElementById('tax').textContent = `₹${data.tax.toFixed(2)}`;
                             document.getElementById('total').textContent = `₹${data.total.toFixed(2)}`;

@@ -1,6 +1,7 @@
 const User = require("../../models/userSchema.js");
 const Category = require("../../models/categoryModel.js");
 const Product = require("../../models/productSchema.js");
+const Order = require("../../models/orderSchema.js");
 const sharp = require("sharp");
 const bcrypt = require("bcrypt");
 const fs = require("fs");
@@ -431,7 +432,6 @@ const updateProduct = async (req, res) => {
             return res.status(404).json({ success: false, message: "Product not found" });
         }
 
-        // Handle image updates
         if (req.files?.images && req.files.images.length > 0) {
             const images = Array.isArray(req.files.images) ? req.files.images : [req.files.images];
             const uploadPromises = images.map(async (file) => {
@@ -444,7 +444,6 @@ const updateProduct = async (req, res) => {
 
             const newImages = await Promise.all(uploadPromises);
             
-            // If there are existing images, combine them with new ones
             if (product.images && product.images.length > 0) {
                 product.images = [...product.images, ...newImages];
             } else {
@@ -452,7 +451,6 @@ const updateProduct = async (req, res) => {
             }
         }
 
-        // Ensure minimum image requirement
         if (product.images.length < 3) {
             return res.status(400).json({ 
                 success: false, 
@@ -524,22 +522,467 @@ const deleteProduct = async (req, res) => {
     }
 };
 
+// Helper function to get date range based on timeframe
+const getDateRange = (timeFrame) => {
+    const now = new Date();
+    let startDate = new Date();
+    const endDate = now;
+
+    switch (timeFrame) {
+        case 'daily':
+            startDate.setDate(now.getDate() - 30); // Last 30 days
+            break;
+        case 'weekly':
+            startDate.setDate(now.getDate() - (7 * 12)); // Last 12 weeks
+            break;
+        case 'monthly':
+            startDate.setMonth(now.getMonth() - 12); // Last 12 months
+            break;
+        case 'yearly':
+            startDate.setFullYear(now.getFullYear() - 5); // Last 5 years
+            break;
+        default:
+            startDate.setDate(now.getDate() - 30); // Default to last 30 days
+    }
+
+    // Set start date to beginning of day and end date to end of day
+    startDate.setHours(0, 0, 0, 0);
+    endDate.setHours(23, 59, 59, 999);
+
+    return { startDate, endDate };
+};
+
+// Helper function to format date based on timeframe
+const formatDateForGrouping = (date, timeFrame) => {
+    const d = new Date(date);
+    switch (timeFrame) {
+        case 'daily':
+            return d.toISOString().split('T')[0]; // YYYY-MM-DD
+        case 'weekly':
+            const weekStart = new Date(d);
+            while (weekStart.getDay() !== 0) { // 0 is Sunday
+                weekStart.setDate(weekStart.getDate() - 1);
+            }
+            return `Week of ${weekStart.toISOString().split('T')[0]}`;
+        case 'monthly':
+            return d.toLocaleString('default', { year: 'numeric', month: 'long' });
+        case 'yearly':
+            return d.getFullYear().toString();
+        default:
+            return d.toISOString().split('T')[0];
+    }
+};
+
+// Get sales data for charts
+const getSalesData = async (req, res) => {
+    try {
+        const timeFrame = req.query.timeFrame || 'daily';
+        const { startDate, endDate } = getDateRange(timeFrame);
+        
+        console.log('Fetching sales data:', {
+            timeFrame,
+            startDate: startDate.toISOString(),
+            endDate: endDate.toISOString()
+        });
+
+        // Build the date format and group ID based on timeframe
+        let dateFormat, groupId;
+        switch (timeFrame) {
+            case 'daily':
+                dateFormat = '%Y-%m-%d';
+                groupId = {
+                    year: { $year: '$orderDate' },
+                    month: { $month: '$orderDate' },
+                    day: { $dayOfMonth: '$orderDate' }
+                };
+                break;
+            case 'weekly':
+                dateFormat = '%Y-W%U';
+                groupId = {
+                    year: { $year: '$orderDate' },
+                    week: { $week: '$orderDate' }
+                };
+                break;
+            case 'monthly':
+                dateFormat = '%Y-%m';
+                groupId = {
+                    year: { $year: '$orderDate' },
+                    month: { $month: '$orderDate' }
+                };
+                break;
+            case 'yearly':
+                dateFormat = '%Y';
+                groupId = {
+                    year: { $year: '$orderDate' }
+                };
+                break;
+        }
+
+        const salesData = await Order.aggregate([
+            {
+                $match: {
+                    orderStatus: 'Delivered',
+                    paymentStatus: 'Paid',
+                    isReturned: { $ne: true },
+                    orderDate: { 
+                        $gte: startDate,
+                        $lte: endDate 
+                    }
+                }
+            },
+            {
+                $unwind: '$items'
+            },
+            {
+                $group: {
+                    _id: groupId,
+                    revenue: {
+                        $sum: {
+                            $subtract: [
+                                { $multiply: ['$items.price', '$items.quantity'] },
+                                { $ifNull: ['$discountAmount', 0] }
+                            ]
+                        }
+                    },
+                    orderCount: { $sum: 1 },
+                    itemCount: { $sum: '$items.quantity' }
+                }
+            },
+            {
+                $project: {
+                    _id: 0,
+                    date: {
+                        $dateToString: {
+                            format: dateFormat,
+                            date: {
+                                $dateFromParts: {
+                                    'year': '$_id.year',
+                                    'month': { $ifNull: ['$_id.month', 1] },
+                                    'day': { $ifNull: ['$_id.day', 1] }
+                                }
+                            }
+                        }
+                    },
+                    revenue: 1,
+                    orderCount: 1,
+                    itemCount: 1
+                }
+            },
+            {
+                $sort: { 'date': 1 }
+            }
+        ]);
+
+        console.log('Raw sales data:', salesData);
+
+        // Format the data for response
+        let formattedData = new Map();
+
+        // Initialize all periods
+        let currentDate = new Date(startDate);
+        while (currentDate <= endDate) {
+            let key;
+            switch (timeFrame) {
+                case 'daily':
+                    key = currentDate.toISOString().split('T')[0];
+                    currentDate.setDate(currentDate.getDate() + 1);
+                    break;
+                case 'weekly':
+                    const weekNum = Math.ceil((currentDate.getDate() - 1) / 7);
+                    key = `${currentDate.getFullYear()}-W${weekNum.toString().padStart(2, '0')}`;
+                    currentDate.setDate(currentDate.getDate() + 7);
+                    break;
+                case 'monthly':
+                    key = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
+                    currentDate.setMonth(currentDate.getMonth() + 1);
+                    break;
+                case 'yearly':
+                    key = currentDate.getFullYear().toString();
+                    currentDate.setFullYear(currentDate.getFullYear() + 1);
+                    break;
+            }
+            formattedData.set(key, 0);
+        }
+
+        // Fill in actual data
+        salesData.forEach(data => {
+            if (formattedData.has(data.date)) {
+                formattedData.set(data.date, data.revenue);
+            }
+        });
+
+        // Convert to arrays for response
+        const labels = Array.from(formattedData.keys()).map(date => {
+            switch (timeFrame) {
+                case 'daily':
+                    return new Date(date).toLocaleDateString('en-IN', { 
+                        day: 'numeric', 
+                        month: 'short'
+                    });
+                case 'weekly':
+                    const [year, week] = date.split('-W');
+                    return `Week ${week}`;
+                case 'monthly':
+                    return new Date(date + '-01').toLocaleDateString('en-IN', { 
+                        month: 'short',
+                        year: 'numeric'
+                    });
+                case 'yearly':
+                    return date;
+                default:
+                    return date;
+            }
+        });
+
+        const values = Array.from(formattedData.values());
+
+        console.log('Formatted response:', {
+            labels,
+            values,
+            timeFrame
+        });
+
+        res.json({
+            success: true,
+            labels,
+            values
+        });
+
+    } catch (error) {
+        console.error('Error getting sales data:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Failed to get sales data',
+            error: error.message 
+        });
+    }
+};
+
 const loadDashboard = async (req, res) => {
     try {
-        const totalUsers = await User.countDocuments({ isAdmin: false });
-        const totalProducts = await Product.countDocuments();
-        const totalCategories = await Category.countDocuments();
+        // Get basic counts
+        const totalProducts = await Product.countDocuments({ isDeleted: { $ne: true } });
+        const totalUsers = await User.countDocuments({ isAdmin: false, isBlocked: false });
         
+        // Get all orders (not just delivered)
+        const totalOrders = await Order.countDocuments();
+        
+        // Calculate total revenue from all completed and delivered orders
+        const revenueStats = await Order.aggregate([
+            {
+                $match: {
+                    orderStatus: 'Delivered',
+                    paymentStatus: 'Paid',
+                    isRefunded: { $ne: true }
+                }
+            },
+            {
+                $unwind: '$items'  // Unwind the items array
+            },
+            {
+                $group: {
+                    _id: null,
+                    itemsTotal: {
+                        $sum: {
+                            $multiply: ['$items.price', '$items.quantity'] // Multiply price and quantity
+                        }
+                    },
+                    shippingTotal: { $sum: '$shippingFee' },
+                    discountTotal: { $sum: { $add: ['$discountAmount', { $ifNull: ['$coupon.discountAmount', 0] }] } },
+                    totalItemsSold: { $sum: '$items.quantity' }
+                }
+            }
+        ]);
+
+        // Calculate final revenue
+        const totalRevenue = revenueStats[0] ? 
+            (revenueStats[0].itemsTotal + (revenueStats[0].shippingTotal || 0) - revenueStats[0].discountTotal) : 0;
+        const totalItemsSold = revenueStats[0]?.totalItemsSold || 0;
+
+        // Get order status counts with detailed revenue
+        const orderStats = await Order.aggregate([
+            {
+                $unwind: '$items'
+            },
+            {
+                $group: {
+                    _id: '$orderStatus',
+                    count: { $sum: 1 },
+                    itemsRevenue: { 
+                        $sum: { $multiply: ['$items.price', '$items.quantity'] }
+                    },
+                    shippingTotal: { $sum: '$shippingFee' },
+                    discountTotal: { $sum: { $add: ['$discountAmount', { $ifNull: ['$coupon.discountAmount', 0] }] } }
+                }
+            }
+        ]);
+
+        const orderStatusCounts = {
+            'Pending': { count: 0, revenue: 0 },
+            'Processing': { count: 0, revenue: 0 },
+            'Shipped': { count: 0, revenue: 0 },
+            'Delivered': { count: 0, revenue: 0 },
+            'Cancelled': { count: 0, revenue: 0 },
+            'Returned': { count: 0, revenue: 0 }
+        };
+
+        orderStats.forEach(stat => {
+            if (stat._id in orderStatusCounts) {
+                const totalRevenue = stat.itemsRevenue + (stat.shippingTotal || 0) - (stat.discountTotal || 0);
+                orderStatusCounts[stat._id] = {
+                    count: stat.count,
+                    revenue: parseFloat(totalRevenue.toFixed(2))
+                };
+            }
+        });
+
+        // Get recent orders with user details
+        const recentOrders = await Order.find()
+            .sort({ orderDate: -1 })
+            .limit(5)
+            .populate('userId', 'name email');
+
         res.render('dashboard', {
             totalUsers,
             totalProducts,
-            totalCategories
+            totalOrders,
+            totalRevenue: totalRevenue.toFixed(2),
+            totalItemsSold,
+            orderStatusCounts,
+            recentOrders,
+            averageOrderValue: totalOrders > 0 ? (totalRevenue / totalOrders).toFixed(2) : '0.00'
         });
     } catch (error) {
         console.error('Error loading dashboard:', error);
-        res.status(500).render('error', { message: 'Error loading dashboard' });
+        res.status(500).send('Error loading dashboard');
     }
-}
+};
+
+const getTopProducts = async (req, res) => {
+    try {
+        const orders = await Order.find({ 
+            status: 'delivered',
+            paymentStatus: 'completed',
+            'items.product': { $exists: true }
+        })
+        .populate('items.product', 'name price images')
+        .sort('-createdAt')
+        .limit(100); // Limit to recent orders for better performance
+
+        const productSales = new Map();
+        
+        // Process each order
+        orders.forEach(order => {
+            order.items.forEach(item => {
+                if (!item.product) return;
+                
+                const productId = item.product._id.toString();
+                const currentStats = productSales.get(productId) || {
+                    name: item.product.name,
+                    unitsSold: 0,
+                    revenue: 0,
+                    imageUrl: item.product.images?.[0] || ''
+                };
+
+                currentStats.unitsSold += item.quantity;
+                currentStats.revenue += item.price * item.quantity;
+                productSales.set(productId, currentStats);
+            });
+        });
+
+        // Convert to array and sort by revenue
+        const topProducts = Array.from(productSales.values())
+            .sort((a, b) => b.revenue - a.revenue)
+            .slice(0, 10)
+            .map(product => ({
+                ...product,
+                revenue: parseFloat(product.revenue.toFixed(2)),
+                unitsSold: parseInt(product.unitsSold)
+            }));
+
+        res.json({ 
+            success: true, 
+            products: topProducts 
+        });
+    } catch (error) {
+        console.error('Error fetching top products:', error);
+        res.status(500).json({ success: false, message: 'Error fetching top products' });
+    }
+};
+
+const getTopCategories = async (req, res) => {
+    try {
+        const categoryStats = await Order.aggregate([
+            {
+                $match: {
+                    orderStatus: 'Delivered',
+                    paymentStatus: 'Paid',
+                    isRefunded: { $ne: true }
+                }
+            },
+            { $unwind: '$items' },
+            {
+                $lookup: {
+                    from: 'products',
+                    localField: 'items.productId',
+                    foreignField: '_id',
+                    as: 'product'
+                }
+            },
+            { $unwind: '$product' },
+            {
+                $lookup: {
+                    from: 'categories',
+                    localField: 'product.category',
+                    foreignField: '_id',
+                    as: 'category'
+                }
+            },
+            { $unwind: '$category' },
+            {
+                $match: {
+                    'category.isDeleted': { $ne: true }
+                }
+            },
+            {
+                $group: {
+                    _id: '$category._id',
+                    name: { $first: '$category.name' },
+                    sales: {
+                        $sum: {
+                            $subtract: [
+                                { $multiply: ['$items.price', '$items.quantity'] },
+                                { $ifNull: ['$discountAmount', 0] }
+                            ]
+                        }
+                    },
+                    unitsSold: { $sum: '$items.quantity' }
+                }
+            },
+            { $sort: { sales: -1 } },
+            { $limit: 10 }
+        ]);
+
+        console.log('Category stats:', categoryStats);
+
+        res.json({
+            success: true,
+            categories: categoryStats.map(cat => ({
+                name: cat.name,
+                sales: parseFloat(cat.sales.toFixed(2)),
+                unitsSold: cat.unitsSold
+            }))
+        });
+    } catch (error) {
+        console.error('Error fetching category stats:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Error fetching category statistics'
+        });
+    }
+};
+
+
 
 const logout = async (req, res) => {
     try {
@@ -570,6 +1013,9 @@ module.exports = {
     updateProduct,
     deleteProductImage,
     deleteProduct,
-    logout,
-    loadDashboard
+    loadDashboard,
+    getSalesData,
+    getTopProducts,
+    getTopCategories,
+    logout
 };

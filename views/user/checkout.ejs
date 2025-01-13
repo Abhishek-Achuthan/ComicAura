@@ -158,11 +158,14 @@
                             Credit/Debit Card (Razorpay)
                         </label>
                     </div>
-                    <div class="payment-method">
+                    <div class="payment-method" id="codMethodContainer">
                         <input type="radio" class="form-check-input" name="paymentMethod" id="cod" value="COD">
                         <label class="form-check-label" for="cod">
                             <i class="fas fa-money-bill-wave me-2"></i>
                             Cash on Delivery
+                            <small class="text-danger ms-2" id="codRestrictionMsg" style="display: none;">
+                                (Not available for orders above ₹1,000)
+                            </small>
                         </label>
                     </div>
                     <div class="payment-method">
@@ -479,103 +482,80 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize all modals
     const modals = document.querySelectorAll('.modal');
     modals.forEach(modal => {
         new bootstrap.Modal(modal);
     });
 });
 
-    // Make addresses available to the JavaScript
     const addresses = <%- JSON.stringify(addresses) %>;
     
     $(document).ready(function() {
-        // Coupon application
+        // Apply coupon
         $('#applyCouponBtn').click(function() {
-            const code = $('#couponCode').val().trim();
-            if (!code) {
-                showCouponMessage('Please enter a coupon code', 'error');
+            const couponCode = $('#couponCode').val().trim();
+            if (!couponCode) {
+                showToast('Please enter a coupon code', 'error');
                 return;
             }
 
             $.ajax({
-                url: '/apply-coupon',
+                url: '/checkout/apply-coupon',
                 method: 'POST',
-                data: { code },
+                data: { couponCode },
                 success: function(response) {
                     if (response.success) {
-                        showCouponMessage(response.message, 'success');
-                        updateOrderSummary(response.data);
+                        showToast(response.message, 'success');
+                        updateOrderSummary(response);
                         
-                        // Show the applied coupon section
-                        const discountRow = `
-                            <div class="summary-item discount-row">
-                                <span>
-                                    Discount (${response.data.coupon.code})
-                                    <button class="btn btn-link btn-sm text-danger p-0 ms-2 remove-coupon">
-                                        <i class="fas fa-times"></i>
-                                    </button>
-                                </span>
-                                <span class="text-success">-₹${response.data.discountAmount.toFixed(2)}</span>
-                            </div>
-                        `;
+                        // Disable coupon input and button
+                        $('#couponCode').prop('disabled', true);
+                        $('#applyCouponBtn').prop('disabled', true);
                         
-                        // Remove any existing discount row
-                        $('.discount-row').remove();
-                        // Add the new discount row before shipping
-                        $(discountRow).insertBefore('.shipping-info');
+                        // Show remove button
+                        $('.discount-row').show();
                         
-                        // Clear the input
-                        $('#couponCode').val('');
+                        // Update total and check COD availability
+                        updateTotalAndCOD(response.total);
                     } else {
-                        showCouponMessage(response.message, 'error');
+                        showToast(response.message, 'error');
                     }
                 },
                 error: function(xhr) {
-                    const response = xhr.responseJSON || {};
-                    showCouponMessage(response.message || 'Failed to apply coupon', 'error');
+                    showToast('Error applying coupon', 'error');
                 }
             });
         });
 
         // Remove coupon
-        $(document).on('click', '.remove-coupon', function(e) {
-            e.preventDefault();
-            
+        function removeCoupon() {
             $.ajax({
-                url: '/remove-coupon',
+                url: '/checkout/remove-coupon',
                 method: 'POST',
                 success: function(response) {
                     if (response.success) {
-                        // Remove the discount row
-                        $('.discount-row').remove();
+                        showToast('Coupon removed successfully', 'success');
                         
-                        // Update the order summary
-                        updateOrderSummary(response.data);
+                        // Enable coupon input and button
+                        $('#couponCode').val('').prop('disabled', false);
+                        $('#applyCouponBtn').prop('disabled', false);
                         
-                        showCouponMessage('Coupon removed successfully', 'success');
-                        setTimeout(() => {
-                            $('#couponMessage').empty();
-                        }, 3000);
+                        // Hide discount row
+                        $('.discount-row').hide();
+                        
+                        // Update order summary
+                        updateOrderSummary(response);
+                        
+                        // Update total and check COD availability
+                        updateTotalAndCOD(response.total);
+                    } else {
+                        showToast(response.message, 'error');
                     }
                 },
                 error: function() {
-                    showCouponMessage('Failed to remove coupon', 'error');
+                    showToast('Error removing coupon', 'error');
                 }
             });
-        });
-
-        function showCouponMessage(message, type) {
-            const messageDiv = $('#couponMessage');
-            messageDiv.removeClass('text-success text-danger')
-                     .addClass(type === 'success' ? 'text-success' : 'text-danger')
-                     .text(message);
-            
-            if (type === 'success') {
-                setTimeout(() => {
-                    messageDiv.empty();
-                }, 3000);
-            }
         }
 
         function updateOrderSummary(data) {
@@ -584,5 +564,33 @@ document.addEventListener('DOMContentLoaded', function() {
             $('#tax').text(`₹${(data.tax || 0).toFixed(2)}`);
             $('#total').text(`₹${(data.total || 0).toFixed(2)}`);
         }
+
+        function updateTotalAndCOD(newTotal) {
+            document.getElementById('total').innerText = `₹${newTotal.toFixed(2)}`;
+            updateCODAvailability();
+        }
+
+        function updateCODAvailability() {
+            const totalAmount = parseFloat(document.getElementById('total').innerText.replace('₹', ''));
+            const codInput = document.getElementById('cod');
+            const codRestrictionMsg = document.getElementById('codRestrictionMsg');
+            const codMethodContainer = document.getElementById('codMethodContainer');
+
+            if (totalAmount > 1000) {
+                codInput.disabled = true;
+                codRestrictionMsg.style.display = 'inline';
+                codMethodContainer.style.opacity = '0.5';
+                
+                if (codInput.checked) {
+                    document.getElementById('razorpay').checked = true;
+                }
+            } else {
+                codInput.disabled = false;
+                codRestrictionMsg.style.display = 'none';
+                codMethodContainer.style.opacity = '1';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', updateCODAvailability);
     });
 </script>

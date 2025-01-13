@@ -51,9 +51,7 @@ const orderController = {
     createOrder: async (req, res) => {
         try {
             const { addressId, paymentMethod } = req.body;
-            const cart = await Cart.findOne({ user: req.user._id })
-                .populate('items.product');
-
+            const cart = await Cart.findOne({ user: req.user._id }).populate('items.productId');
             if (!cart || cart.items.length === 0) {
                 return res.status(400).json({ 
                     success: false, 
@@ -61,18 +59,17 @@ const orderController = {
                 });
             }
 
-            // Create order items from cart
             const orderItems = cart.items.map(item => ({
-                productId: item.product._id,
+                productId: item.productId,
                 quantity: item.quantity,
-                price: item.product.discountedPrice || item.product.price
+                price: item.productId.discountedPrice || item.productId.price
             }));
 
             // Calculate totals
             const subTotal = cart.items.reduce((total, item) => {
-                return total + (item.quantity * (item.product.discountedPrice || item.product.price));
+                return total + (item.quantity * (item.productId.discountedPrice || item.productId.price));
             }, 0);
-            const taxRate = 0.18; // 18% GST
+            const taxRate = 0.18;
             const taxAmount = subTotal * taxRate;
             const totalAmount = subTotal + taxAmount;
 
@@ -166,7 +163,6 @@ const orderController = {
         }
     },
 
-    // Verify payment
     verifyPayment: async (req, res) => {
         try {
             const { orderId, paymentId, signature } = req.body;
@@ -178,6 +174,10 @@ const orderController = {
             );
 
             if (!isValid) {
+                await Order.findOneAndUpdate(
+                    {razorpayOrderId: orderId},
+                    {paymentStatus:"Failed"}
+                )
                 return res.status(400).json({
                     success: false,
                     message: 'Invalid payment signature'
@@ -216,7 +216,6 @@ const orderController = {
         }
     },
 
-    // Cancel order
     cancelOrder: async (req, res) => {
         try {
             const userId = req.session.userId;
@@ -235,7 +234,6 @@ const orderController = {
                 });
             }
 
-            // Check if order can be cancelled based on status
             if (!['Pending', 'Processing', 'Confirmed'].includes(order.orderStatus)) {
                 return res.status(400).json({
                     success: false,
@@ -245,16 +243,13 @@ const orderController = {
 
             order.orderStatus = 'Cancelled';
 
-            // Process refund based on payment method and status
             if (['Completed', 'completed', 'Paid', 'paid'].includes(order.paymentStatus)) {
                 const refundAmount = order.totalAmount;
                 
-                // Process refund for online payment, wallet payment, or COD after delivery
                 if (order.paymentMethod === 'razorpay' || 
                     order.paymentMethod === 'wallet' || 
                     (order.paymentMethod === 'COD' && order.orderStatus === 'Delivered')) {
                     
-                    // Get or create wallet
                     const wallet = await Wallet.findOne({ user: userId });
                     if (!wallet) {
                         const newWallet = new Wallet({
@@ -281,7 +276,6 @@ const orderController = {
                     order.paymentStatus = 'Refunded';
                 }
 
-                // Update refund details in order
                 order.refundDetails = {
                     amount: refundAmount,
                     status: 'completed',
@@ -289,7 +283,6 @@ const orderController = {
                     method: 'wallet'
                 };
 
-                // Return items to stock
                 for (const item of order.items) {
                     await Product.findByIdAndUpdate(
                         item.productId,
@@ -300,7 +293,6 @@ const orderController = {
 
             await order.save();
 
-            // Send appropriate success message based on refund status
             const message = order.paymentStatus === 'Refunded' 
                 ? `Order cancelled successfully. ₹${order.refundDetails.amount} has been refunded to your wallet`
                 : 'Order cancelled successfully';

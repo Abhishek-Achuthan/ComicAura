@@ -1,62 +1,3 @@
-window.toggleWishlist = async function(productId, button) {
-    try {
-        const isInWishlist = button.classList.contains('active');
-        const endpoint = isInWishlist ? '/wishlist/remove' : '/wishlist/add';
-
-        const response = await fetch(endpoint, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({ productId })
-        });
-
-        const data = await response.json();
-        console.log('Response Data:', data);
-
-        if (!response.ok) {
-            if (response.status === 401) {
-                window.location.href = '/login';
-                return;
-            }
-            throw new Error(data.message || 'Failed to update wishlist');
-        }
-
-        if (data.success) {
-            button.classList.toggle('active');
-            const icon = button.querySelector('i');
-            icon.classList.toggle('bi-heart');
-            icon.classList.toggle('bi-heart-fill');
-
-            const Toast = Swal.mixin({
-                toast: true,
-                position: 'top-end',
-                showConfirmButton: false,
-                timer: 3000,
-                background: '#1a1a1a',
-                color: '#fff'
-            });
-
-            Toast.fire({
-                icon: 'success',
-                title: isInWishlist ? 'Removed from wishlist' : 'Added to wishlist'
-            });
-        } else {
-            throw new Error(data.message || 'Failed to update wishlist');
-        }
-    } catch (error) {
-        console.error('Error updating wishlist:', error);
-        Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: error.message || 'Failed to update wishlist',
-            background: '#1a1a1a',
-            color: '#fff'
-        });
-    }
-};
-
 document.addEventListener('DOMContentLoaded', function() {
     function initOwlCarousel() {
         if (typeof jQuery !== 'undefined' && jQuery.fn.owlCarousel) {
@@ -87,6 +28,14 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     initOwlCarousel();
+
+    // Initialize wishlist buttons
+    document.querySelectorAll('.wishlist-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const productId = this.dataset.productId;
+            toggleWishlist(productId, this);
+        });
+    });
 
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         anchor.addEventListener('click', function (e) {
@@ -128,12 +77,4 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-
-    const wishlistButtons = document.querySelectorAll('.wishlist-btn');
-    wishlistButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const productId = this.getAttribute('data-product-id');
-            window.toggleWishlist(productId, this);
-        });
-    });
 });

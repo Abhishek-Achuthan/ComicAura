@@ -3,6 +3,7 @@
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
 <link rel="stylesheet" href="/css/user/shop.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
 
 <header class="shop-page-header">
     <div class="container">
@@ -104,59 +105,64 @@
                         <% products.forEach(product => { %>
                             <div class="product-card animate__animated animate__fadeIn">
                                 <div class="product-actions">
-                                    <button class="wishlist-btn ${product.inWishlist ? 'active' : ''}"
-                                        onclick="toggleWishlist('${product._id}', this)"
-                                        data-product-id="${product._id}">
-                                        <i class="${product.inWishlist ? 'fas' : 'far'} fa-heart"></i>
+                                    <button class="wishlist-btn <%= product.inWishlist ? 'active' : '' %>"
+                                        onclick="toggleWishlist('<%= product._id %>', this)"
+                                        data-product-id="<%= product._id %>">
+                                        <i class="bi <%= product.inWishlist ? 'bi-heart-fill' : 'bi-heart' %>"></i>
                                     </button>
                                 </div>
-                                <a href="/product/${product._id}" class="product-link">
+                                <a href="/product/<%= product._id %>" class="product-link">
                                     <div class="product-image">
-                                        ${product.hasOffer ? `
+                                        <% if (product.hasOffer) { %>
                                             <div class="offer-badge">
-                                                ${product.offerDetails.discountType === 'percentage' ? `${product.offerDetails.discountValue}% OFF` : `₹${product.offerDetails.discountValue} OFF`}
+                                                <%= product.offerDetails.type === 'percentage' ? 
+                                                    product.offerDetails.value + '% OFF' : 
+                                                    '₹' + product.offerDetails.value + ' OFF' %>
                                             </div>
-                                        ` : ''}
-                                        <img src="${product.images && product.images[0] ? product.images[0] : '/images/placeholder.jpg'}" alt="${product.name}">
+                                        <% } %>
+                                        <img src="<%= product.images && product.images[0] ? product.images[0] : '/images/placeholder.jpg' %>" 
+                                            alt="<%= product.name %>">
                                     </div>
                                     <div class="product-details">
-                                        <h3 class="product-title">${product.name}</h3>
+                                        <h3 class="product-title"><%= product.name %></h3>
                                         <div class="product-rating">
                                             <div class="rating-stars">
-                                                ${Array(5).fill(0).map((_, i) => `
-                                                    <i class="fas fa-star ${i < (product.averageRating || 0) ? 'filled' : ''}"></i>
-                                                `).join('')}
+                                                <% Array(5).fill(0).forEach((_, i) => { %>
+                                                    <i class="fas fa-star <%= i < (product.averageRating || 0) ? 'filled' : '' %>"></i>
+                                                <% }); %>
                                             </div>
-                                            <span class="rating-count">(${product.ratings ? product.ratings.length : 0})</span>
+                                            <span class="rating-count">(<%= product.ratings ? product.ratings.length : 0 %>)</span>
                                         </div>
                                         <div class="product-price">
-                                            ${product.hasOffer ? `
-                                                <span class="original-price">₹${product.originalPrice.toFixed(2)}</span>
-                                            ` : ''}
-                                            <span class="current-price ${product.hasOffer ? 'discounted' : ''}">₹${product.price.toFixed(2)}</span>
+                                            <% if (product.hasOffer) { %>
+                                                <span class="original-price">₹<%= product.originalPrice.toFixed(2) %></span>
+                                            <% } %>
+                                            <span class="current-price <%= product.hasOffer ? 'discounted' : '' %>">₹<%= product.price.toFixed(2) %></span>
                                         </div>
-                                        ${product.hasOffer ? `
+                                        <% if (product.hasOffer) { %>
                                             <div class="offer-info">
-                                                Category Offer: ${product.offerDetails.discountType === 'percentage' ? `${product.offerDetails.discountValue}% off` : `₹${product.offerDetails.discountValue} off`}
+                                                Category Offer: <%= product.offerDetails.type === 'percentage' ? 
+                                                    product.offerDetails.value + '% off' : 
+                                                    '₹' + product.offerDetails.value + ' off' %>
                                             </div>
-                                        ` : ''}
+                                        <% } %>
                                     </div>
                                 </a>
-                                ${product.inCart ? `
+                                <% if (product.inCart) { %>
                                     <button 
                                         class="add-to-cart-btn in-cart" 
                                         onclick="window.location.href='/cart'"
                                     >
                                         <i class="fas fa-shopping-cart"></i> Go to Cart
                                     </button>
-                                ` : `
+                                <% } else { %>
                                     <button 
                                         class="add-to-cart-btn" 
-                                        onclick="addToCart('${product._id}', this)"
-                                        data-product-id="${product._id}">
+                                        onclick="addToCart('<%= product._id %>', this)"
+                                        data-product-id="<%= product._id %>">
                                         <i class="fas fa-cart-plus"></i> Add to Cart
                                     </button>
-                                `}
+                                <% } %>
                             </div>
                         <% }); %>
                     </div>
@@ -165,7 +171,6 @@
                         <div class="pagination">
                             <% if (totalPages > 1) { %>
                                 <% if (hasPreviousPage) { %>
-                                    <a onclick="applyFilters(1)" class="page-link">First</a>
                                     <a onclick="applyFilters(<%= previousPage %>)" class="page-link">Previous</a>
                                 <% } %>
 
@@ -382,7 +387,7 @@
                         <button class="wishlist-btn ${product.inWishlist ? 'active' : ''}"
                             onclick="toggleWishlist('${product._id}', this)"
                             data-product-id="${product._id}">
-                            <i class="${product.inWishlist ? 'fas' : 'far'} fa-heart"></i>
+                            <i class="bi ${product.inWishlist ? 'bi-heart-fill' : 'bi-heart'}"></i>
                         </button>
                     </div>
                     <a href="/product/${product._id}" class="product-link">

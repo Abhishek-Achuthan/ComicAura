@@ -34,7 +34,6 @@ const categoryOfferSchema = new mongoose.Schema({
     }
 });
 
-// Add index for faster queries
 categoryOfferSchema.index({ category: 1, isActive: 1 });
 categoryOfferSchema.index({ startDate: 1, endDate: 1 });
 

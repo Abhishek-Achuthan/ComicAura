@@ -141,7 +141,6 @@ const orderSchema = new mongoose.Schema({
     deliveryDate: {
         type: Date
     },
-    // New fields for return rejection
     returnStatus: {
         type: String,
         enum: ['pending', 'approved', 'rejected'],
