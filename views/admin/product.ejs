@@ -25,9 +25,9 @@
 
         <!-- Search Bar -->
         <div class="search-container">
-            <form action="/admin/productId" method="get">
+            <form action="/admin/product" method="get">
                 <div class="input-group">
-                    <input type="text" class="form-control" placeholder="Search products" name="search" value="<%= searchQuery %>"/>
+                    <input type="text" class="form-control" placeholder="Search products" name="search" value="<%= locals.searchQuery || '' %>"/>
                     <button class="btn btn-primary" type="submit">
                         <i class="fas fa-search"></i> Search
                     </button>
@@ -73,8 +73,8 @@
                                                 <td>₹<%= product.salePrice || '-' %></td>
                                                 <td><%= product.stock %></td>
                                                 <td>
-                                                    <span class="badge <%= product.status === 'In Stock' ? 'bg-success' : 'bg-danger' %>">
-                                                        <%= product.status %>
+                                                    <span class="badge <%= product.stockStatus === 'In Stock' ? 'bg-success' : 'bg-danger' %>">
+                                                        <%= product.stockStatus %>
                                                     </span>
                                                 </td>
                                                 <td>

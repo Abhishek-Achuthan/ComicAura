@@ -320,26 +320,52 @@
         </div>
     </footer>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
     <script src="/js/utils/toaster.js"></script>
     <script src="/js/user/pagination.js"></script>
     <script src="/js/user/cart.js"></script>
     
     <script>
+        // Configure toastr
+        toastr.options = {
+            closeButton: true,
+            newestOnTop: false,
+            progressBar: true,
+            positionClass: "toast-top-right",
+            preventDuplicates: false,
+            showDuration: "300",
+            hideDuration: "1000",
+            timeOut: "5000",
+            extendedTimeOut: "1000",
+            showEasing: "swing",
+            hideEasing: "linear",
+            showMethod: "fadeIn",
+            hideMethod: "fadeOut"
+        };
+
+        function showToast(type, message) {
+            switch(type) {
+                case 'success':
+                    toastr.success(message);
+                    break;
+                case 'warning':
+                    toastr.warning(message);
+                    break;
+                case 'error':
+                    toastr.error(message);
+                    break;
+                default:
+                    toastr.info(message);
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             const cartItems = document.getElementsByClassName('cart-item');
             if (cartItems.length > 0) {
                 initializePagination(cartItems.length, 2, 'cartItems', 'cartPagination');
             }
             
-            toastr.options = {
-                closeButton: true,
-                progressBar: true,
-                positionClass: "toast-top-right",
-                timeOut: 3000
-            };
-
             const checkoutBtn = document.getElementById('checkoutBtn');
             if (checkoutBtn) {
                 checkoutBtn.addEventListener('click', function() {
@@ -369,19 +395,19 @@
                             if (remainingItems.length > 0) {
                                 initializePagination(remainingItems.length, 2, 'cartItems', 'cartPagination');
                             } else {
-                                toastr.success('Item removed from cart');
+                                showToast('success', 'Item removed from cart');
                                 setTimeout(() => location.reload(), 1000);
                                 return;
                             }
                             
-                            toastr.success('Item removed from cart');
+                            showToast('success', 'Item removed from cart');
                             window.location.reload();
                         } else {
-                            toastr.error(data.message || 'Failed to remove item');
+                            showToast('error', data.message || 'Failed to remove item');
                         }
                     } catch (error) {
                         console.error('Error removing item:', error);
-                        toastr.error('Failed to remove item. Please try again');
+                        showToast('error', 'Failed to remove item. Please try again');
                     }
                 });
             });
@@ -393,10 +419,10 @@
 
             }
             if (typeof serverMessages !== 'undefined') {
-                if (serverMessages.success) toastr.success(serverMessages.success);
-                if (serverMessages.error) toastr.error(serverMessages.error);
-                if (serverMessages.warning) toastr.warning(serverMessages.warning);
-                if (serverMessages.info) toastr.info(serverMessages.info);
+                if (serverMessages.success) showToast('success', serverMessages.success);
+                if (serverMessages.error) showToast('error', serverMessages.error);
+                if (serverMessages.warning) showToast('warning', serverMessages.warning);
+                if (serverMessages.info) showToast('info', serverMessages.info);
             }
 
             const userDropdownBtn = document.getElementById('userDropdownBtn');
@@ -453,7 +479,7 @@
                             quantityElement.textContent = action === 'increase' ? currentQuantity + 1 : currentQuantity - 1;
 
                             const cartCountElement = document.querySelector('.cart-count');
-                            if (cartCountElement) {
+                            if (cartCountElement && data.cartCount) {
                                 cartCountElement.textContent = data.cartCount;
                             }
 
@@ -481,7 +507,11 @@
                                 showToast(data.toast.type, data.toast.message);
                             }
                         } else {
-                            showToast('error', data.message);
+                            showToast(data.toast?.type || 'error', data.toast?.message || data.message);
+                            
+                            if (data.currentQuantity) {
+                                quantityElement.textContent = data.currentQuantity;
+                            }
                         }
                     } catch (error) {
                         console.error('Error:', error);

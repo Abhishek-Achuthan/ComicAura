@@ -520,40 +520,56 @@ document.addEventListener('DOMContentLoaded', function() {
     // Delete coupon
     document.querySelectorAll('.delete-coupon').forEach(button => {
         button.addEventListener('click', async function() {
-            if (!confirm('Are you sure you want to delete this coupon?')) {
-                return;
-            }
+            const couponId = this.getAttribute('data-coupon-id');
+            
+            const result = await Swal.fire({
+                title: 'Are you sure?',
+                text: "This coupon will be permanently deleted!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Yes, delete it!',
+                background: '#212529',
+                color: '#fff'
+            });
 
-            const couponId = this.dataset.couponId;
-
-            try {
-                const response = await fetch(`/admin/coupons/${couponId}`, {
-                    method: 'DELETE'
-                });
-
-                const result = await response.json();
-                if (result.success) {
-                    Swal.fire({
-                        title: 'Success!',
-                        text: 'Coupon deleted successfully',
-                        icon: 'success'
-                    }).then(() => {
-                        this.closest('tr').remove();
+            if (result.isConfirmed) {
+                try {
+                    const response = await fetch(`/admin/coupons/${couponId}`, {
+                        method: 'DELETE'
                     });
-                } else {
+                    const data = await response.json();
+
+                    if (data.success) {
+                        Swal.fire({
+                            title: 'Deleted!',
+                            text: 'Coupon has been deleted successfully.',
+                            icon: 'success',
+                            background: '#212529',
+                            color: '#fff'
+                        }).then(() => {
+                            window.location.reload();
+                        });
+                    } else {
+                        Swal.fire({
+                            title: 'Error!',
+                            text: data.message || 'Failed to delete coupon',
+                            icon: 'error',
+                            background: '#212529',
+                            color: '#fff'
+                        });
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
                     Swal.fire({
                         title: 'Error!',
-                        text: result.message,
-                        icon: 'error'
+                        text: 'Something went wrong while deleting the coupon',
+                        icon: 'error',
+                        background: '#212529',
+                        color: '#fff'
                     });
                 }
-            } catch (error) {
-                console.error('Error deleting coupon:', error);
-                Swal.fire({
-                    title: 'Error!',
-                    text: 'Failed to delete coupon',
-                    icon: 'error'
-                });
             }
         });
     });

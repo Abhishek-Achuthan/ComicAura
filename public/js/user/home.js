@@ -22,6 +22,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     992: {
                         items: 4
                     }
+                },
+                onTranslated: function() {
+                    // Update cart buttons after carousel movement
+                    if (window.updateCarouselButtons) {
+                        window.updateCarouselButtons();
+                    }
                 }
             });
         }

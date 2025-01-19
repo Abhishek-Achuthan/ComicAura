@@ -91,11 +91,13 @@
         const searchIcon = document.querySelector('.search-icon');
     });
 
-    function updateCartButton(button) {
-        button.innerHTML = '<i class="fas fa-shopping-cart"></i>';
-        button.classList.add('in-cart');
-        button.removeAttribute('onclick');
-        button.addEventListener('click', () => window.location.href = '/cart');
+    function updateCartButton(button, productId) {
+        const cartButton = document.getElementById(`cart-btn-${productId}`);
+        if (cartButton) {
+            cartButton.innerHTML = '<i class="fas fa-shopping-cart"></i> Go to Cart';
+            cartButton.classList.add('in-cart');
+            cartButton.onclick = () => window.location.href = '/cart';
+        }
     }
 
     async function addToCart(productId, button) {
@@ -134,7 +136,7 @@
                 }
 
                 const buttons = document.querySelectorAll(`button[data-product-id="${productId}"]`);
-                buttons.forEach(updateCartButton);
+                buttons.forEach(button => updateCartButton(button, productId));
             }
         } catch (error) {
             console.error('Error:', error);

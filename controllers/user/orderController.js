@@ -8,14 +8,14 @@ const mongoose = require('mongoose');
 const Product = require('../../models/productSchema');
 const { generateOrderId } = require('../../utils/orderUtils');
 
-async function clearCart(userId) {
-    const cart = await Cart.findOne({ user: userId });
+async function clearCart(userId, session) {
+    const cart = await Cart.findOne({ user: userId }, { session });
     if (cart) {
         cart.items = [];
         cart.total = 0;
         cart.couponApplied = null;
         cart.couponDiscount = 0;
-        await cart.save();
+        await cart.save({ session });
     }
 }
 
@@ -47,8 +47,10 @@ async function processRefundToWallet(userId, amount, orderId, description) {
 }
 
 const orderController = {
-    // Create new order
     createOrder: async (req, res) => {
+        const session = await mongoose.startSession();
+        session.startTransaction();
+
         try {
             const { addressId, paymentMethod } = req.body;
             const cart = await Cart.findOne({ user: req.user._id }).populate('items.productId');
@@ -58,6 +60,26 @@ const orderController = {
                     message: 'Cart is empty' 
                 });
             }
+
+            for (const item of cart.items) {
+                const product = await Product.findById(item.productId._id);
+                if (!product || product.stock < item.quantity) {
+                    return res.status(400).json({
+                        success: false,
+                        message: `Insufficient stock for product: ${product.name}`
+                    });
+                }
+            }
+
+            // Prepare stock update operations
+            const stockUpdateOps = cart.items.map(item => ({
+                updateOne: {
+                    filter: { _id: item.productId._id },
+                    update: { $inc: { stock: -item.quantity } }
+                }
+            }));
+
+            await Product.bulkWrite(stockUpdateOps, { session });
 
             const orderItems = cart.items.map(item => ({
                 productId: item.productId,
@@ -79,6 +101,7 @@ const orderController = {
             const shippingAddress = user.addresses.find(addr => addr._id.toString() === addressId);
 
             if (!shippingAddress) {
+                await session.abortTransaction();
                 return res.status(400).json({
                     success: false,
                     message: 'Invalid shipping address'
@@ -87,9 +110,9 @@ const orderController = {
 
             const orderId = generateOrderId();
 
-            const order = await Order.create({
+            const order = await Order.create([{
                 orderId,
-              user,
+                user,
                 items: orderItems,
                 shippingAddress: {
                     name: shippingAddress.name,
@@ -108,22 +131,24 @@ const orderController = {
                 orderDate: new Date(),
                 couponApplied: cart.couponApplied,
                 couponDiscount: cart.couponDiscount
-            });
+            }], { session });
 
             if (paymentMethod === 'razorpay') {
                 const razorpayOrder = await paymentService.createRazorpayOrder(
                     totalAmount,
-                    order.orderId.toString()
+                    order[0].orderId.toString()
                 );
 
+                await session.commitTransaction();
                 return res.json({
                     success: true,
-                    orderId: order.orderId,
+                    orderId: order[0].orderId,
                     order: razorpayOrder
                 });
             } else if (paymentMethod === 'wallet') {
                 const wallet = await Wallet.findOne({ user: req.user._id });
                 if (!wallet || wallet.balance < totalAmount) {
+                    await session.abortTransaction();
                     return res.status(400).json({
                         success: false,
                         message: 'Insufficient wallet balance'
@@ -135,31 +160,35 @@ const orderController = {
                 wallet.transactions.push({
                     type: 'DEBIT',
                     amount: totalAmount,
-                    description: `Payment for order #${order.orderId}`,
-                    orderId: order.orderId
+                    description: `Payment for order #${order[0].orderId}`,
+                    orderId: order[0].orderId
                 });
-                await wallet.save();
+                await wallet.save({ session });
 
-                order.paymentStatus = 'completed';
-                await order.save();
+                order[0].paymentStatus = 'completed';
+                await order[0].save({ session });
             }
 
-            // For COD or wallet payment
-            await clearCart(req.user._id);
+            await clearCart(req.user._id, session);
+            
+            await session.commitTransaction();
             
             res.json({ 
                 success: true, 
-                orderId: order.orderId,
+                orderId: order[0].orderId,
                 order: {
                     amount: totalAmount
                 }
             });
         } catch (error) {
+            await session.abortTransaction();
             console.error('Create order error:', error);
             res.status(500).json({ 
                 success: false, 
                 message: 'Failed to create order' 
             });
+        } finally {
+            session.endSession();
         }
     },
 
@@ -217,6 +246,9 @@ const orderController = {
     },
 
     cancelOrder: async (req, res) => {
+        const session = await mongoose.startSession();
+        session.startTransaction();
+
         try {
             const userId = req.session.userId;
             const { orderId } = req.params;
@@ -228,6 +260,7 @@ const orderController = {
             }).populate('items.productId');
 
             if (!order) {
+                await session.abortTransaction();
                 return res.status(404).json({
                     success: false,
                     message: 'Order not found'
@@ -235,6 +268,7 @@ const orderController = {
             }
 
             if (!['Pending', 'Processing', 'Confirmed'].includes(order.orderStatus)) {
+                await session.abortTransaction();
                 return res.status(400).json({
                     success: false,
                     message: 'Order cannot be cancelled at this stage'
@@ -242,6 +276,15 @@ const orderController = {
             }
 
             order.orderStatus = 'Cancelled';
+
+            // Return stock to inventory
+            const stockUpdateOps = order.items.map(item => ({
+                updateOne: {
+                    filter: { _id: item.productId._id },
+                    update: { $inc: { stock: item.quantity } }
+                }
+            }));
+            await Product.bulkWrite(stockUpdateOps, { session });
 
             if (['Completed', 'completed', 'Paid', 'paid'].includes(order.paymentStatus)) {
                 const refundAmount = order.totalAmount;
@@ -262,7 +305,7 @@ const orderController = {
                                 orderId: order._id
                             }]
                         });
-                        await newWallet.save();
+                        await newWallet.save({ session });
                     } else {
                         wallet.balance += refundAmount;
                         wallet.transactions.push({
@@ -271,7 +314,7 @@ const orderController = {
                             description: `Refund for cancelled order ${order.orderId}`,
                             orderId: order._id
                         });
-                        await wallet.save();
+                        await wallet.save({ session });
                     }
                     order.paymentStatus = 'Refunded';
                 }
@@ -282,16 +325,10 @@ const orderController = {
                     processedAt: new Date(),
                     method: 'wallet'
                 };
-
-                for (const item of order.items) {
-                    await Product.findByIdAndUpdate(
-                        item.productId,
-                        { $inc: { stock: item.quantity } }
-                    );
-                }
             }
 
-            await order.save();
+            await order.save({ session });
+            await session.commitTransaction();
 
             const message = order.paymentStatus === 'Refunded' 
                 ? `Order cancelled successfully. ₹${order.refundDetails.amount} has been refunded to your wallet`
@@ -304,11 +341,14 @@ const orderController = {
                 refundAmount: order.refundDetails?.amount || 0
             });
         } catch (error) {
+            await session.abortTransaction();
             console.error('Cancel order error:', error);
             res.status(500).json({ 
                 success: false, 
                 message: 'Failed to cancel order' 
             });
+        } finally {
+            session.endSession();
         }
     },
 
@@ -378,7 +418,6 @@ const orderController = {
             order.returnRequestDate = new Date();
             await order.save();
 
-            // Send success response
             res.json({ 
                 success: true, 
                 message: 'Return request submitted successfully' 

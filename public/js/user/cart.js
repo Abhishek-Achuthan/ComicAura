@@ -1,8 +1,19 @@
+// Keep track of products in cart
+let productsInCart = new Set();
+
 document.addEventListener('DOMContentLoaded', () => {
     toastr.options = {
         positionClass: "toast-top-right",
         timeOut: 2000
     };
+
+    // Initialize products in cart from existing buttons
+    document.querySelectorAll('.add-to-cart-btn.in-cart').forEach(button => {
+        const productId = button.getAttribute('data-product-id');
+        if (productId) {
+            productsInCart.add(productId);
+        }
+    });
 
     document.querySelectorAll('.quantity-btn').forEach(btn => {
         btn.addEventListener('click', async function() {
@@ -88,12 +99,9 @@ async function addToCart(productId, button) {
         if (data.success) {
             document.getElementById('cartCount').textContent = data.cartCount;
             toastr.success('Item added to cart');
-
-            if (button) {
-                button.innerHTML = '<i class="fas fa-shopping-cart"></i>';
-                button.classList.add('in-cart');
-                button.onclick = () => window.location.href = '/cart';
-            }
+            
+            productsInCart.add(productId);
+            updateAllCartButtons(productId);
         } else {
             toastr.error(data.message || 'Failed to add item');
         }
@@ -101,6 +109,32 @@ async function addToCart(productId, button) {
         console.error('Error:', error);
         toastr.error('Failed to add item');
     }
+}
+
+function updateAllCartButtons(productId) {
+    document.querySelectorAll(`button[data-product-id="${productId}"]`).forEach(button => {
+        updateCartButton(button);
+    });
+}
+
+function updateCartButton(button) {
+    if (!button) return;
+    
+    button.innerHTML = '<i class="fas fa-shopping-cart"></i> Go to Cart';
+    button.classList.add('in-cart');
+    button.onclick = () => window.location.href = '/cart';
+}
+
+// Function to check if a product is in cart
+function isProductInCart(productId) {
+    return productsInCart.has(productId);
+}
+
+// Function to update button states after carousel movement
+function updateCarouselButtons() {
+    productsInCart.forEach(productId => {
+        updateAllCartButtons(productId);
+    });
 }
 
 async function removeFromCart(productId) {
@@ -131,3 +165,8 @@ async function removeFromCart(productId) {
         toastr.error('Failed to remove item');
     }
 }
+
+// Export functions for use in other files
+window.addToCart = addToCart;
+window.isProductInCart = isProductInCart;
+window.updateCarouselButtons = updateCarouselButtons;

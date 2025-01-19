@@ -210,6 +210,14 @@ const placeOrder = async (req, res) => {
                     receipt: `order_${Date.now()}`
                 });
 
+                // Reduce stock for each product
+                for (const item of cart.items) {
+                    await Product.findByIdAndUpdate(
+                        item.productId._id,
+                        { $inc: { stock: -item.quantity } }
+                    );
+                }
+
                 order.razorpayOrderId = razorpayOrder.id;
                 await order.save();
 
@@ -240,6 +248,14 @@ const placeOrder = async (req, res) => {
                     return res.status(400).json({ success: false, message: 'Insufficient wallet balance' });
                 }
 
+                // Reduce stock for each product
+                for (const item of cart.items) {
+                    await Product.findByIdAndUpdate(
+                        item.productId._id,
+                        { $inc: { stock: -item.quantity } }
+                    );
+                }
+
                 await wallet.addTransaction('DEBIT', total, `Payment for order ${order._id}`, order._id);
                 wallet.balance -= total;
                 await wallet.save();
@@ -262,6 +278,14 @@ const placeOrder = async (req, res) => {
                 });
             }
         } else if (paymentMethod === 'COD') {
+            // Reduce stock for each product
+            for (const item of cart.items) {
+                await Product.findByIdAndUpdate(
+                    item.productId._id,
+                    { $inc: { stock: -item.quantity } }
+                );
+            }
+
             await order.save();
             
             cart.items = [];

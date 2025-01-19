@@ -58,7 +58,6 @@ const couponSchema = new mongoose.Schema({
     }
 });
 
-// Ensure end date is after start date
 couponSchema.pre('save', function(next) {
     if (this.endDate <= this.startDate) {
         next(new Error('End date must be after start date'));

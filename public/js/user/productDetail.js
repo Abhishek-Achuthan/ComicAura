@@ -1,3 +1,81 @@
+async function addToCartWithQuantity(productId) {
+    try {
+        const quantity = parseInt(document.getElementById('quantity').value) || 1;
+        const maxStock = parseInt(document.getElementById('quantity').getAttribute('max')) || 0;
+        
+        // Frontend validations
+        if (quantity < 1) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Invalid Quantity',
+                text: 'Please select at least 1 item'
+            });
+            return;
+        }
+
+        if (quantity > maxStock) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Not Enough Stock',
+                text: `Only ${maxStock} items available in stock`
+            });
+            return;
+        }
+
+        if (quantity > 5) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Quantity Limit Exceeded',
+                text: 'Maximum 5 items allowed per product'
+            });
+            return;
+        }
+        
+        const response = await fetch('/addToCartWithQuantity', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                productId: productId,
+                quantity: quantity
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            // Update cart count in UI if available
+            if (data.cartCount) {
+                const cartCountElement = document.querySelector('.cart-count');
+                if (cartCountElement) {
+                    cartCountElement.textContent = data.cartCount;
+                }
+            }
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Added to Cart!',
+                text: 'Product has been added to your cart.',
+                showConfirmButton: false,
+                timer: 1500
+            });
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Oops...',
+                text: data.message || 'Failed to add to cart'
+            });
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Oops...',
+            text: 'Something went wrong!'
+        });
+    }
+}
 
 document.addEventListener('DOMContentLoaded', function() {
     const galleryThumbs = new Swiper('.gallery-thumbs', {
@@ -62,4 +140,3 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
-

@@ -199,7 +199,6 @@ async function placeOrder() {
             const rzp = new Razorpay(options);
             
             rzp.on('payment.failed', async function(response) {
-                console.log('Payment failed:', response.error);
                 await updatePaymentStatus(data.orderId, 'Failed', response.error);
                 window.location.href = `/payment-failed/${data.orderId}`;
             });

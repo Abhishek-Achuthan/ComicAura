@@ -17,7 +17,6 @@ const addCategoryOffer = async (req, res) => {
             });
         }
 
-        // Update the category with the offer
         const updatedCategory = await Category.findByIdAndUpdate(
             categoryId,
             {

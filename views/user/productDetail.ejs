@@ -141,7 +141,7 @@
                         </div>
                     </div>
                     <div class="d-grid gap-3 d-md-flex">
-                        <button class="btn btn-primary btn-lg flex-grow-1" onclick="addToCart('<%= product._id %>')">
+                        <button class="btn btn-primary btn-lg flex-grow-1" onclick="addToCartWithQuantity('<%= product._id %>')">
                             <i class="fas fa-cart-plus me-2"></i>Add to Cart
                         </button>
                         <button class="btn btn-outline-light btn-lg" onclick="toggleWishlist('<%= product._id %>')">
@@ -291,7 +291,7 @@
         </div>
     </div>
 </div>
-
+<script src="/js/user/productDetail.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {

@@ -45,6 +45,7 @@
                                 <div class="product-actions">
                                     <% if (product.inCart) { %>
                                         <button 
+                                            id="cart-btn-<%= product._id %>"
                                             class="add-to-cart-btn in-cart" 
                                             onclick="window.location.href='/cart'"
                                             data-product-id="<%= product._id %>"
@@ -53,6 +54,7 @@
                                         </button>
                                     <% } else { %>
                                         <button 
+                                            id="cart-btn-<%= product._id %>"
                                             class="add-to-cart-btn" 
                                             onclick="addToCart('<%= product._id %>', this)"
                                             data-product-id="<%= product._id %>"

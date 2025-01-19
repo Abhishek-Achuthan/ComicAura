@@ -50,8 +50,19 @@ const login = async (req, res) => {
 
 const loadUser = async (req, res) => {
     try {
-        const users = await User.find({ isAdmin: false });
-        return res.render("user", { users });
+        const searchQuery = req.query.search;
+        let query = { isAdmin: false };
+        
+        if (searchQuery) {
+            query.$or = [
+                { name: { $regex: searchQuery, $options: 'i' } },
+                { email: { $regex: searchQuery, $options: 'i' } },
+                { phone: { $regex: searchQuery, $options: 'i' } }
+            ];
+        }
+        
+        const users = await User.find(query);
+        return res.render("user", { users, searchQuery });
     } catch (error) {
         console.log(error);
         return res.status(500).render("error", { message: "Internal server error" });
@@ -96,7 +107,6 @@ const addCategory = async (req, res) => {
     try {
         const { name, description } = req.body;
         
-        // Validate input
         if (!name || !description) {
             return res.status(400).json({
                 success: false,
@@ -104,7 +114,6 @@ const addCategory = async (req, res) => {
             });
         }
 
-        // Check for existing category
         const existingCategory = await Category.findOne({ 
             name: { $regex: new RegExp(`^${name}$`, 'i') } 
         });
@@ -116,7 +125,6 @@ const addCategory = async (req, res) => {
             });
         }
 
-        // Create and save new category
         const category = new Category({
             name: name.trim(),
             description: description.trim(),
@@ -263,6 +271,8 @@ const loadProduct = async (req,res) => {
             query = {
                 $or: [
                     { name: { $regex: searchQuery, $options: 'i' } },
+                    { description: { $regex: searchQuery, $options: 'i' } },
+                    { 'category.name': { $regex: searchQuery, $options: 'i' } }
                 ]
             };
         }
@@ -273,16 +283,22 @@ const loadProduct = async (req,res) => {
 
         const productsWithImages = products.map(product => ({
             ...product,
-            images: product.images.map(image => image.startsWith('http') ? image : image)
+            images: product.images.map(image => image.startsWith('http') ? image : image),
+            stockStatus: product.stock <= 0 ? 'Out of Stock' : 'In Stock'
         }));
 
         res.render("product", { 
             products: productsWithImages,
-            searchQuery: searchQuery || '' 
+            searchQuery: searchQuery || '',
+            error: null
         });
     } catch (error) {
         console.log("Error loading products:", error.message);
-        res.status(500).json({ message: "Failed to load products" });
+        res.render("product", {
+            products: [],
+            searchQuery: searchQuery || '',
+            error: "Failed to load products. Please try again."
+        });
     }
 }
 
@@ -307,7 +323,7 @@ const addProduct = async (req, res) => {
     try {
         const { name, category, regularPrice, salePrice, stock, description, tags } = req.body;
         
-        // Validate required fields
+        
         if (!name || !category || !regularPrice || !stock) {
             return res.status(400).json({ 
                 success: false,
@@ -432,9 +448,8 @@ const updateProduct = async (req, res) => {
             return res.status(404).json({ success: false, message: "Product not found" });
         }
 
-        if (req.files?.images && req.files.images.length > 0) {
-            const images = Array.isArray(req.files.images) ? req.files.images : [req.files.images];
-            const uploadPromises = images.map(async (file) => {
+        if (req.files && req.files.length > 0) {
+            const uploadPromises = req.files.map(async (file) => {
                 const imagePath = `/uploads/products/${Date.now()}-${file.originalname}`;
                 await sharp(file.buffer)
                     .resize(800, 800, { fit: 'cover' })
@@ -458,7 +473,6 @@ const updateProduct = async (req, res) => {
             });
         }
 
-        // Update product details
         product.name = name;
         product.description = description;
         product.regularPrice = Number(regularPrice);
@@ -522,7 +536,6 @@ const deleteProduct = async (req, res) => {
     }
 };
 
-// Helper function to get date range based on timeframe
 const getDateRange = (timeFrame) => {
     const now = new Date();
     let startDate = new Date();
@@ -530,37 +543,35 @@ const getDateRange = (timeFrame) => {
 
     switch (timeFrame) {
         case 'daily':
-            startDate.setDate(now.getDate() - 30); // Last 30 days
-            break;
+            startDate.setDate(now.getDate() - 30); 
         case 'weekly':
-            startDate.setDate(now.getDate() - (7 * 12)); // Last 12 weeks
+            startDate.setDate(now.getDate() - (7 * 12)); 
             break;
         case 'monthly':
-            startDate.setMonth(now.getMonth() - 12); // Last 12 months
+            startDate.setMonth(now.getMonth() - 12);
             break;
         case 'yearly':
-            startDate.setFullYear(now.getFullYear() - 5); // Last 5 years
+            startDate.setFullYear(now.getFullYear() - 5);
             break;
         default:
-            startDate.setDate(now.getDate() - 30); // Default to last 30 days
+            startDate.setDate(now.getDate() - 30); 
     }
 
-    // Set start date to beginning of day and end date to end of day
+   
     startDate.setHours(0, 0, 0, 0);
     endDate.setHours(23, 59, 59, 999);
 
     return { startDate, endDate };
 };
 
-// Helper function to format date based on timeframe
 const formatDateForGrouping = (date, timeFrame) => {
     const d = new Date(date);
     switch (timeFrame) {
         case 'daily':
-            return d.toISOString().split('T')[0]; // YYYY-MM-DD
+            return d.toISOString().split('T')[0]; 
         case 'weekly':
             const weekStart = new Date(d);
-            while (weekStart.getDay() !== 0) { // 0 is Sunday
+            while (weekStart.getDay() !== 0) { 
                 weekStart.setDate(weekStart.getDate() - 1);
             }
             return `Week of ${weekStart.toISOString().split('T')[0]}`;
@@ -573,7 +584,6 @@ const formatDateForGrouping = (date, timeFrame) => {
     }
 };
 
-// Get sales data for charts
 const getSalesData = async (req, res) => {
     try {
         const timeFrame = req.query.timeFrame || 'daily';
@@ -585,7 +595,6 @@ const getSalesData = async (req, res) => {
             endDate: endDate.toISOString()
         });
 
-        // Build the date format and group ID based on timeframe
         let dateFormat, groupId;
         switch (timeFrame) {
             case 'daily':
@@ -675,10 +684,8 @@ const getSalesData = async (req, res) => {
 
         console.log('Raw sales data:', salesData);
 
-        // Format the data for response
         let formattedData = new Map();
 
-        // Initialize all periods
         let currentDate = new Date(startDate);
         while (currentDate <= endDate) {
             let key;
@@ -760,14 +767,11 @@ const getSalesData = async (req, res) => {
 
 const loadDashboard = async (req, res) => {
     try {
-        // Get basic counts
         const totalProducts = await Product.countDocuments({ isDeleted: { $ne: true } });
         const totalUsers = await User.countDocuments({ isAdmin: false, isBlocked: false });
         
-        // Get all orders (not just delivered)
         const totalOrders = await Order.countDocuments();
         
-        // Calculate total revenue from all completed and delivered orders
         const revenueStats = await Order.aggregate([
             {
                 $match: {
@@ -777,14 +781,14 @@ const loadDashboard = async (req, res) => {
                 }
             },
             {
-                $unwind: '$items'  // Unwind the items array
+                $unwind: '$items'  
             },
             {
                 $group: {
                     _id: null,
                     itemsTotal: {
                         $sum: {
-                            $multiply: ['$items.price', '$items.quantity'] // Multiply price and quantity
+                            $multiply: ['$items.price', '$items.quantity'] 
                         }
                     },
                     shippingTotal: { $sum: '$shippingFee' },
@@ -794,12 +798,10 @@ const loadDashboard = async (req, res) => {
             }
         ]);
 
-        // Calculate final revenue
         const totalRevenue = revenueStats[0] ? 
             (revenueStats[0].itemsTotal + (revenueStats[0].shippingTotal || 0) - revenueStats[0].discountTotal) : 0;
         const totalItemsSold = revenueStats[0]?.totalItemsSold || 0;
 
-        // Get order status counts with detailed revenue
         const orderStats = await Order.aggregate([
             {
                 $unwind: '$items'
@@ -836,7 +838,6 @@ const loadDashboard = async (req, res) => {
             }
         });
 
-        // Get recent orders with user details
         const recentOrders = await Order.find()
             .sort({ orderDate: -1 })
             .limit(5)
@@ -867,11 +868,10 @@ const getTopProducts = async (req, res) => {
         })
         .populate('items.product', 'name price images')
         .sort('-createdAt')
-        .limit(100); // Limit to recent orders for better performance
+        .limit(100); 
 
         const productSales = new Map();
         
-        // Process each order
         orders.forEach(order => {
             order.items.forEach(item => {
                 if (!item.product) return;
@@ -890,7 +890,6 @@ const getTopProducts = async (req, res) => {
             });
         });
 
-        // Convert to array and sort by revenue
         const topProducts = Array.from(productSales.values())
             .sort((a, b) => b.revenue - a.revenue)
             .slice(0, 10)

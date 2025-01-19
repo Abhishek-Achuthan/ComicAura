@@ -2,7 +2,6 @@ const User = require('../../models/userSchema');
 const Wallet = require('../../models/walletModel');
 
 const walletController = {
-    // Get wallet balance and transactions
     getWalletDetails: async (req, res) => {
         try {
             const userId = req.user._id;
@@ -21,7 +20,6 @@ const walletController = {
         }
     },
 
-    // Add money to wallet
     addMoney: async (req, res) => {
         try {
             const { amount } = req.body;

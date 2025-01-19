@@ -5,7 +5,6 @@ function generateInvoice(order, user) {
         try {
             const doc = new PDFDocument({ margin: 50 });
             
-            // Store buffer chunks
             const buffers = [];
             doc.on('data', buffers.push.bind(buffers));
             doc.on('end', () => {
@@ -13,7 +12,6 @@ function generateInvoice(order, user) {
                 resolve(pdfData);
             });
 
-            // Header
             doc.fillColor('#444444')
                .fontSize(30)
                .text('Comic Aura', 50, 45)
@@ -23,7 +21,6 @@ function generateInvoice(order, user) {
                .text('New York, NY, 10025', 200, 80, { align: 'right' })
                .moveDown();
 
-            // Customer Information
             doc.fontSize(20)
                .text('Invoice', 50, 160);
             
@@ -54,7 +51,6 @@ function generateInvoice(order, user) {
             
             generateHr(doc, 252);
 
-            // Items table
             const invoiceTableTop = 330;
             
             doc.font('Helvetica-Bold');

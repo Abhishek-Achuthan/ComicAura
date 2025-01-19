@@ -36,7 +36,6 @@ const cartSchema = new mongoose.Schema({
     timestamps: true
 });
 
-// Virtual for calculating total
 cartSchema.virtual('total').get(function() {
     return this.items.reduce((total, item) => {
         const price = item.productId.salePrice || item.productId.regularPrice;
@@ -44,7 +43,6 @@ cartSchema.virtual('total').get(function() {
     }, 0);
 });
 
-// Ensure virtuals are included when converting to JSON
 cartSchema.set('toJSON', { virtuals: true });
 cartSchema.set('toObject', { virtuals: true });
 

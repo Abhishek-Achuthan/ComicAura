@@ -230,17 +230,35 @@ async function getWishlistItems(userId) {
 }
 
 function processCategories(categories) {
+    const currentDate = new Date();
+    
     return categories.map(category => {
         const categoryObj = category.toObject();
-        const currentOffer = category.currentOffer;
         
-        if (currentOffer) {
-            categoryObj.offer = {
-                ...categoryObj.offer,
-                isActive: true,
-                currentValue: currentOffer
-            };
+        // Check if category has an active offer and it's within the valid date range
+        if (categoryObj.offer && categoryObj.offer.isActive) {
+            const startDate = categoryObj.offer.startDate ? new Date(categoryObj.offer.startDate) : null;
+            const endDate = categoryObj.offer.endDate ? new Date(categoryObj.offer.endDate) : null;
+            
+            // Check if the offer is currently valid
+            const isValidOffer = (!startDate || currentDate >= startDate) && 
+                               (!endDate || currentDate <= endDate);
+            
+            categoryObj.offer.isActive = isValidOffer;
+            
+            if (isValidOffer) {
+                categoryObj.currentOffer = {
+                    discountType: categoryObj.offer.discountType,
+                    discountValue: categoryObj.offer.discountValue,
+                    maxDiscountAmount: categoryObj.offer.maxDiscountAmount
+                };
+            } else {
+                categoryObj.currentOffer = null;
+            }
+        } else {
+            categoryObj.currentOffer = null;
         }
+        
         return categoryObj;
     });
 }

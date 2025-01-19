@@ -44,6 +44,7 @@ router.get("/shop/filter", shopController.filterProducts)
 
 router.get("/cart", userAuth.isLoggedIn, cartController.loadCart);
 router.post("/addToCart", userAuth.isLoggedIn, cartController.addToCart);
+router.post("/addToCartWithQuantity", userAuth.isLoggedIn, cartController.addToCartWithQuantity);
 router.post("/updateCartQuantity", userAuth.isLoggedIn, cartController.updateCartQuantity);
 router.post("/removeFromCart", userAuth.isLoggedIn, cartController.removeFromCart);
 
@@ -67,7 +68,6 @@ router.post('/wishlist/add', userAuth.isLoggedIn, wishlistController.addToWishli
 router.post('/wishlist/remove', userAuth.isLoggedIn, wishlistController.removeFromWishlist);
 router.post('/wishlist/toggle/:productId', userAuth.isLoggedIn, wishlistController.toggleWishlist);
 
-// Wallet 
 router.get('/wallet', userAuth.isLoggedIn, walletController.getWalletDetails);
 router.post('/wallet/add', userAuth.isLoggedIn, walletController.addMoney);
 router.post('/initiate-wallet-payment', userAuth.isLoggedIn, profileController.initiateWalletAddMoney);
@@ -75,19 +75,12 @@ router.post('/verify-wallet-payment', userAuth.isLoggedIn, profileController.ver
 
 router.get('/orders', userAuth.isLoggedIn, profileController.getOrders);
 
-// Coupon 
 router.post('/apply-coupon', userAuth.isLoggedIn, couponController.applyCoupon);
 router.post('/remove-coupon', userAuth.isLoggedIn, couponController.removeCoupon);
 
-// Payment retry route
 router.post('/retry-payment/:orderId', userAuth.isLoggedIn, checkoutController.retryPayment);
-
-// Payment Failed Route
 router.get('/payment-failed/:orderId', userAuth.isLoggedIn, checkoutController.paymentFailed);
-
-// Payment status update route
 router.post('/update-payment-status/:orderId', userAuth.isLoggedIn, checkoutController.updatePaymentStatus);
-
 router.get('/download-invoice/:orderId', userAuth.isLoggedIn, checkoutController.downloadInvoice);
 
 router.get("/logout", userAuth.isLoggedIn, userController.logout);

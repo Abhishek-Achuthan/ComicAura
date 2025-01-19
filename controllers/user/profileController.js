@@ -158,7 +158,6 @@ const addAddress = async (req,res) => {
             isDefault: editedAddress.isDefault === 'true' || editedAddress.isDefault === true
         });
 
-        // Validate required fields
         if (!address.name) {
             return res.status(400).json({
                 success: false,
@@ -571,7 +570,6 @@ const getOrders = async (req, res) => {
         const limit = 10;
         const skip = (page - 1) * limit;
 
-        // Get total orders count
         const totalOrders = await Order.countDocuments({ userId });
         const totalPages = Math.ceil(totalOrders / limit);
 

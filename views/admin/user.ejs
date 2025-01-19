@@ -71,9 +71,9 @@
             <div class="card-header">
                 <div class="d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Users List</h5>
-                    <form action="/admin/users/" method="get" class="search-form">
+                    <form action="/admin/user" method="get" class="search-form">
                         <div class="input-group">
-                            <input type="text" class="form-control" placeholder="Search users..." name="search" >
+                            <input type="text" class="form-control" placeholder="Search users..." name="search" value="<%= locals.searchQuery || '' %>">
                             <button class="btn btn-primary" type="submit">
                                 <i class="fas fa-search"></i>
                             </button>
