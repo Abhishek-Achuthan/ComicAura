@@ -15,6 +15,7 @@ const isLogin = async (req, res, next) => {
 const isLoggedIn = async (req, res, next) => {
     try {
         if (!req.session.userId) {
+            console.log("User is not logged in", req.originalUrl);
             return res.redirect("/login");
         }
 

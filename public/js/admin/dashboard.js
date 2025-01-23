@@ -302,4 +302,5 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Load category data
     fetchCategoryData();
+    updateTopProducts() 
 });
