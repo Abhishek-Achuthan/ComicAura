@@ -39,7 +39,7 @@ app.use("/admin",adminRouter);
 app.use('/auth', authRouter);
 
 app.listen(process.env.PORT,()=>{
-    console.log("server is started");
+
 });
 
 module.exports = app;

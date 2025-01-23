@@ -24,7 +24,6 @@ const loadProfile = async (req, res) => {
 
         const user = await User.findById(userId);
         if (!user) {
-            console.log('User not found');
             return res.redirect('/login');
         }
 
@@ -63,7 +62,6 @@ const addAddress = async (req,res) => {
     try {
         const address = req.body;
         const userId = req.session.userId;
-        console.log(address)
 
         if(!address) {
             return res.status(400).json({
@@ -468,7 +466,8 @@ const verifyWalletPayment = async (req, res) => {
         const order = await razorpay.orders.fetch(razorpay_order_id);
         const amount = order.amount / 100; // Convert paise to rupees
 
-        const wallet = await Wallet.findOne({ user: userId });
+        const wallet = await Wallet.getOrCreateWallet( userId );
+         
         if (!wallet) {
             return res.status(404).json({
                 success: false,
@@ -640,6 +639,58 @@ const getOrderDetails = async (req, res) => {
     }
 };
 
+const updateProfile = async (req, res) => {
+    try {
+        const userId = req.session.userId;
+        const { firstName, lastName, phoneNumber } = req.body;
+
+        if (!firstName || !lastName || !phoneNumber) {
+            return res.status(400).json({
+                success: false,
+                message: "First name, last name and phone number are required"
+            });
+        }
+
+        // Validate phone number format
+        if (!/^\d{10}$/.test(phoneNumber)) {
+            return res.status(400).json({
+                success: false,
+                message: "Please enter a valid 10-digit phone number"
+            });
+        }
+
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+
+        user.firstName = firstName;
+        user.lastName = lastName;
+        user.phoneNumber = phoneNumber;
+        await user.save();
+
+        return res.status(200).json({
+            success: true,
+            message: "Profile updated successfully",
+            user: {
+                firstName: user.firstName,
+                lastName: user.lastName,
+                phoneNumber: user.phoneNumber
+            }
+        });
+
+    } catch (error) {
+        console.error('Error updating profile:', error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error"
+        });
+    }
+};
+
 module.exports = {
     loadProfile,
     addAddress,
@@ -653,6 +704,7 @@ module.exports = {
     addToWishlist,
     removeFromWishlist,
     getWishlist,
+    getOrders,
     getOrderDetails,
-    getOrders 
+    updateProfile
 };  

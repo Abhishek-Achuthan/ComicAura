@@ -11,7 +11,6 @@ const isadminLogin = async (req, res, next) => {
 };
 
 const isAdmin = async (req, res, next) => {
-  console.log(req.session)
     try {
         if (req.session.admin) {
             return next();

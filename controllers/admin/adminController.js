@@ -29,6 +29,7 @@ const login = async (req, res) => {
     const { email, password } = req.body;
     try {
         const findId = await User.findOne({ email });
+
         if (!findId || !findId.isAdmin) {
             return res.render("adminLogin", { message: "Invalid email or password" });
         }
@@ -281,11 +282,12 @@ const loadProduct = async (req,res) => {
             .populate('category', 'name')
             .lean();
 
-        const productsWithImages = products.map(product => ({
+        const newLocal = products.map(product => ({
             ...product,
             images: product.images.map(image => image.startsWith('http') ? image : image),
             stockStatus: product.stock <= 0 ? 'Out of Stock' : 'In Stock'
         }));
+        const productsWithImages = newLocal;
 
         res.render("product", { 
             products: productsWithImages,
@@ -308,8 +310,6 @@ const loadAddProduct = async (req,res) => {
 
        const categories = await Category.find();
        const products = await Product.find();
-       console.log(categories);
-       console.log(products.name);
        return  res.render("addProduct",{categories,products});
         
     } catch (error) {
@@ -544,6 +544,7 @@ const getDateRange = (timeFrame) => {
     switch (timeFrame) {
         case 'daily':
             startDate.setDate(now.getDate() - 30); 
+            break;
         case 'weekly':
             startDate.setDate(now.getDate() - (7 * 12)); 
             break;
@@ -571,10 +572,9 @@ const formatDateForGrouping = (date, timeFrame) => {
             return d.toISOString().split('T')[0]; 
         case 'weekly':
             const weekStart = new Date(d);
-            while (weekStart.getDay() !== 0) { 
-                weekStart.setDate(weekStart.getDate() - 1);
-            }
-            return `Week of ${weekStart.toISOString().split('T')[0]}`;
+            weekStart.setUTCDate(weekStart.getUTCDate() - weekStart.getUTCDay() + 1);
+            const weekNumber = Math.ceil((((weekStart - new Date(weekStart.getUTCFullYear(), 0, 1)) / 86400000) + 1) / 7);
+            return `${d.getFullYear()}-W${weekNumber.toString().padStart(2, '0')}`;
         case 'monthly':
             return d.toLocaleString('default', { year: 'numeric', month: 'long' });
         case 'yearly':
@@ -588,13 +588,7 @@ const getSalesData = async (req, res) => {
     try {
         const timeFrame = req.query.timeFrame || 'daily';
         const { startDate, endDate } = getDateRange(timeFrame);
-        
-        console.log('Fetching sales data:', {
-            timeFrame,
-            startDate: startDate.toISOString(),
-            endDate: endDate.toISOString()
-        });
-
+  
         let dateFormat, groupId;
         switch (timeFrame) {
             case 'daily':
@@ -606,10 +600,10 @@ const getSalesData = async (req, res) => {
                 };
                 break;
             case 'weekly':
-                dateFormat = '%Y-W%U';
+                dateFormat = '%Y-W%V';
                 groupId = {
                     year: { $year: '$orderDate' },
-                    week: { $week: '$orderDate' }
+                    week: { $isoWeek: '$orderDate' }
                 };
                 break;
             case 'monthly':
@@ -682,8 +676,6 @@ const getSalesData = async (req, res) => {
             }
         ]);
 
-        console.log('Raw sales data:', salesData);
-
         let formattedData = new Map();
 
         let currentDate = new Date(startDate);
@@ -695,8 +687,10 @@ const getSalesData = async (req, res) => {
                     currentDate.setDate(currentDate.getDate() + 1);
                     break;
                 case 'weekly':
-                    const weekNum = Math.ceil((currentDate.getDate() - 1) / 7);
-                    key = `${currentDate.getFullYear()}-W${weekNum.toString().padStart(2, '0')}`;
+                    const weekStart = new Date(currentDate);
+                    weekStart.setUTCDate(weekStart.getUTCDate() - weekStart.getUTCDay() + 1);
+                    const weekNumber = Math.ceil((((weekStart - new Date(weekStart.getUTCFullYear(), 0, 1)) / 86400000) + 1) / 7);
+                    key = `${currentDate.getFullYear()}-W${weekNumber.toString().padStart(2, '0')}`;
                     currentDate.setDate(currentDate.getDate() + 7);
                     break;
                 case 'monthly':
@@ -742,12 +736,6 @@ const getSalesData = async (req, res) => {
         });
 
         const values = Array.from(formattedData.values());
-
-        console.log('Formatted response:', {
-            labels,
-            values,
-            timeFrame
-        });
 
         res.json({
             success: true,
@@ -961,8 +949,6 @@ const getTopCategories = async (req, res) => {
             { $sort: { sales: -1 } },
             { $limit: 10 }
         ]);
-
-        console.log('Category stats:', categoryStats);
 
         res.json({
             success: true,

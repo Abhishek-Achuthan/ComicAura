@@ -15,7 +15,6 @@ passport.use(
                 let user = await User.findOne({ email: profile.emails[0].value });
 
                 if (user) {
-                    console.log("helloo")
                     if (!user.socialLogin.isUsed) {
                         user.socialLogin.isUsed = true;
                         user.socialLogin.provider = 'GOOGLE';

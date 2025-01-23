@@ -95,8 +95,6 @@ const placeOrder = async (req, res) => {
     try {
         const { addressId, paymentMethod } = req.body;
         const userId = req.session.userId;
-        console.log("paymentmethod:", paymentMethod);
-        console.log("addressId:", addressId);
 
         const cart = await Cart.findOne({ userId }).populate('items.productId');
         if (!cart || cart.items.length === 0) {
@@ -133,7 +131,6 @@ const placeOrder = async (req, res) => {
         }
 
         const address = userAddress.address.id(addressId);
-        console.log("Found address:", address);
         
         if (!address) {
             return res.status(400).json({ success: false, message: 'Invalid address' });
@@ -412,7 +409,6 @@ const cancelOrder = async (req, res) => {
                         }]
                     });
                     await newWallet.save();
-                    console.log(`Created new wallet and refunded ₹${order.totalAmount} for order ${order.orderId}`);
                 } else {
                     wallet.balance += order.totalAmount;
                     wallet.transactions.push({
@@ -422,7 +418,6 @@ const cancelOrder = async (req, res) => {
                         orderId: order._id
                     });
                     await wallet.save();
-                    console.log(`Refunded ₹${order.totalAmount} to existing wallet for order ${order.orderId}`);
                 }
                 order.paymentStatus = 'Refunded';
                 await order.save();
@@ -477,7 +472,6 @@ const getOrderSuccess = async (req, res) => {
             return res.redirect('/orders');
         }
 
-        console.log('Order found:', order);
 
         res.render('orderSuccess', {
             order,
@@ -514,15 +508,6 @@ const getOrderHistory = async (req, res) => {
             .sort({ orderDate: -1 })
             .skip(skip)
             .limit(limit);
-
-        
-        if (orders.length > 0) {
-            console.log('First Order Shipping Address:', orders[0].shippingAddress);
-            console.log('First Order Payment Details:', {
-                method: orders[0].paymentMethod,
-                status: orders[0].paymentStatus
-            });
-        }
 
         res.render('orderHistory', {
             user,
@@ -631,8 +616,6 @@ const applyCoupon = async (req, res) => {
 const paymentFailed = async (req, res) => {
 
     try {
-        console.log('Order found:', req.params.orderId);
-
         const orderId = req.params.orderId;
         const userId = req.session.userId;
 
@@ -644,8 +627,6 @@ const paymentFailed = async (req, res) => {
    
 
         order.paymentStatus = 'Failed';
-        console.log(order)
-
         await order.save();
         if (!order) {
             

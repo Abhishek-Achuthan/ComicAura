@@ -2,7 +2,7 @@ const Coupon = require('../../models/couponModel');
 const Cart = require('../../models/cartSchema');
 const Order = require('../../models/orderSchema');
 const Product = require('../../models/productSchema');
-const CategoryOffer = require('../../models/categoryOfferModel');
+const CategoryOffer = require('../../models/categoryOfferModel')
 
 const calculateBestDiscount = async (cart, coupon) => {
     try {

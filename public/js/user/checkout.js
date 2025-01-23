@@ -252,10 +252,6 @@ async function addAddress(event) {
         const addAddressForm = document.getElementById('addAddressForm');
         const formData = new FormData(addAddressForm);
 
-        for (let [key, value] of formData.entries()) {
-            console.log(`${key}: ${value}`);
-        }
-
         const errors = validateAddressForm(formData);
         if (errors.length > 0) {
             showValidationErrors(errors);
@@ -342,11 +338,6 @@ async function updateAddress(event) {
         const formData = new FormData(editAddressForm);
         const addressId = document.getElementById('editAddressId').value;
 
-        console.log('Edit Address Form Data:');
-        for (let [key, value] of formData.entries()) {
-            console.log(`${key}: ${value}`);
-        }
-
         const errors = validateAddressForm(formData);
         if (errors.length > 0) {
             showValidationErrors(errors);
@@ -428,10 +419,6 @@ async function deleteAddress(addressId) {
 function validateAddressForm(formData) {
     const errors = [];
     
-    for (let [key, value] of formData.entries()) {
-        console.log(`${key}: ${value}`);
-    }
-    
     const name = formData.get('fullName');
     if (!name || name.trim().length < 3) {
         errors.push('Name must be at least 3 characters long');
@@ -472,7 +459,6 @@ function validateAddressForm(formData) {
         errors.push('Please select an address type');
     }
 
-    console.log('Validation errors:', errors);
     return errors;
 }
 

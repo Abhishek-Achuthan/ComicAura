@@ -2,8 +2,6 @@
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script src="/js/common.js"></script>
-<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
 <style>
 .modal-container {
@@ -313,7 +311,7 @@
                                             </span>
                                             <% if (order.paymentMethod === 'razorpay') { %>
                                                 <br>
-                                                <small class="text-muted">
+                                                <small class="text-white">
                                                     via Razorpay
                                                 </small>
                                             <% } %>
@@ -537,7 +535,7 @@
         </div>
     </div>
 </div>
-
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <script>
 async function cancelOrder(orderId) {
     try {

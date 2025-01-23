@@ -11,12 +11,6 @@ const categorySchema = new mongoose.Schema({
         type: String,
         trim: true
     },
-    slug: {
-        type: String,
-        required: true,
-        unique: true,
-        trim: true
-    },
     offer: {
         discountType: {
             type: String,

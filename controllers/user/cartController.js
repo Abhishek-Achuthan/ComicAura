@@ -134,7 +134,6 @@ const addToCart = async (req, res) => {
             );
 
             if (existingItemIndex !== -1) {
-                // If product exists and quantity is less than 5, increment it
                 if (cart.items[existingItemIndex].quantity >= 5) {
                     return res.status(400).json({
                         success: false,
@@ -144,7 +143,6 @@ const addToCart = async (req, res) => {
                 }
                 cart.items[existingItemIndex].quantity += 1;
             } else {
-                // If product doesn't exist, add it
                 cart.items.push({
                     productId: productId,
                     quantity: 1

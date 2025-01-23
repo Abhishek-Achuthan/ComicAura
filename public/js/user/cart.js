@@ -1,4 +1,137 @@
-// Keep track of products in cart
+// Set to store products in cart
+let productsInCart = new Set();
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', () => {
+    // Configure toastr
+    toastr.options = {
+        positionClass: "toast-top-right",
+        timeOut: 2000
+    };
+    
+    // Initialize products in cart from existing buttons
+    document.querySelectorAll('.add-to-cart-btn.in-cart').forEach(button => {
+        const productId = button.getAttribute('data-product-id');
+        if (productId) {
+            productsInCart.add(productId);
+        }
+    });
+});
+
+// Function to update a single button
+function updateCartButton(button, productId) {
+    if (!button) return;
+
+    // Create new button to avoid event listener issues
+    const newButton = document.createElement('button');
+    newButton.id = button.id;
+    newButton.className = button.className + ' in-cart';
+    newButton.setAttribute('data-product-id', productId);
+    newButton.innerHTML = '<i class="fas fa-shopping-cart"></i> Go to Cart';
+    
+    // Set up the click handler
+    newButton.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        window.location.href = '/cart';
+    };
+
+    // Replace the old button
+    if (button.parentNode) {
+        button.parentNode.replaceChild(newButton, button);
+    }
+}
+
+// Function to update all buttons for a product
+function updateAllCartButtons(productId) {
+    // Update all buttons with this productId
+    document.querySelectorAll(`button[data-product-id="${productId}"]`).forEach(button => {
+        updateCartButton(button, productId);
+    });
+
+    // Update buttons in carousel items (including cloned ones)
+    const carousel = document.querySelector('.owl-carousel');
+    if (carousel) {
+        carousel.querySelectorAll(`button[data-product-id="${productId}"]`).forEach(button => {
+            updateCartButton(button, productId);
+        });
+    }
+}
+
+// Main function to add item to cart
+async function addToCart(productId, button) {
+    // Prevent adding if already in cart
+    if (!button || button.classList.contains('in-cart')) {
+        return;
+    }
+
+    try {
+        // Show loading state
+        button.disabled = true;
+        const originalContent = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding...';
+
+        // Make API call
+        const response = await fetch('/cart/add', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ productId })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            // Update cart count in header
+            const cartCount = document.getElementById('cartCount');
+            if (cartCount) {
+                cartCount.textContent = data.cartCount;
+            }
+
+            // Add to tracking set
+            productsInCart.add(productId);
+
+            // Show success message
+            toastr.success('Item added to cart');
+
+            // Update all instances of the button
+            updateAllCartButtons(productId);
+
+            // If in carousel, update after a slight delay
+            const carousel = document.querySelector('.owl-carousel');
+            if (carousel) {
+                setTimeout(() => {
+                    updateAllCartButtons(productId);
+                }, 100);
+            }
+        } else {
+            // Show error and reset button
+            toastr.error(data.message || 'Failed to add item');
+            button.innerHTML = originalContent;
+            button.classList.remove('in-cart');
+        }
+    } catch (error) {
+        console.error('Error adding to cart:', error);
+        toastr.error('Failed to add item');
+        button.innerHTML = '<i class="fas fa-cart-plus"></i> Add to Cart';
+        button.classList.remove('in-cart');
+    } finally {
+        button.disabled = false;
+    }
+}
+
+// Function to check if a product is in cart
+function isProductInCart(productId) {
+    return productsInCart.has(productId);
+}
+
+// Function to update carousel buttons after movement
+function updateCarouselButtons() {
+    productsInCart.forEach(productId => {
+        updateAllCartButtons(productId);
+    });
+}
+
+// Export functions for use in other files
 let productsInCart = new Set();
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -7,7 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
         timeOut: 2000
     };
 
-    // Initialize products in cart from existing buttons
+    
     document.querySelectorAll('.add-to-cart-btn.in-cart').forEach(button => {
         const productId = button.getAttribute('data-product-id');
         if (productId) {

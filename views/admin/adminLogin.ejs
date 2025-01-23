@@ -195,6 +195,11 @@
       <div class="login-header">
         <h2>Welcome Back</h2>
         <p>Sign in to your admin account</p>
+        <% if(typeof message !== 'undefined' && message) { %>
+          <div class="alert alert-danger" style="color: #721c24; background-color: #f8d7da; border-color: #f5c6cb; padding: 10px; margin: 10px 0; border-radius: 4px; text-align: center;">
+            <%= message %>
+          </div>
+        <% } %>
       </div>
       <form id="adminLoginForm" method="post" action="/admin/login">
         <div class="form-group">

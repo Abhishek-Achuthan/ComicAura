@@ -18,8 +18,6 @@ function showToast(message,type ='info') {
             default:
                 toastr.info(message);
         }
-    }else{
-        console.log("Toaster is not defined")
     }
   
 }

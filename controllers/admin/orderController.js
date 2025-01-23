@@ -3,8 +3,8 @@ const Product = require("../../models/productSchema.js");
 const ReturnRequest = require("../../models/returnRequestModel.js");
 const PDFDocument = require('pdfkit');
 const ExcelJS = require('exceljs');
+const Wallet = require("../../models/walletModel.js");
 
-// Helper function to format date range
 const getDateRange = (type, customStartDate, customEndDate) => {
     const now = new Date();
     let start = new Date(now);
@@ -16,21 +16,21 @@ const getDateRange = (type, customStartDate, customEndDate) => {
             end.setHours(23, 59, 59, 999);
             break;
         case 'weekly':
-            start.setDate(now.getDate() - now.getDay()); // Start of week (Sunday)
-            end.setDate(start.getDate() + 6); // End of week (Saturday)
+            start.setDate(now.getDate() - now.getDay()); 
+            end.setDate(start.getDate() + 6);
             start.setHours(0, 0, 0, 0);
             end.setHours(23, 59, 59, 999);
             break;
         case 'monthly':
-            start.setDate(1); // Start of month
+            start.setDate(1);
             start.setHours(0, 0, 0, 0);
-            end.setMonth(start.getMonth() + 1, 0); // End of month
+            end.setMonth(start.getMonth() + 1, 0);
             end.setHours(23, 59, 59, 999);
             break;
         case 'yearly':
-            start.setMonth(0, 1); // Start of year
+            start.setMonth(0, 1);
             start.setHours(0, 0, 0, 0);
-            end.setMonth(11, 31); // End of year
+            end.setMonth(11, 31); 
             end.setHours(23, 59, 59, 999);
             break;
         case 'custom':
@@ -229,6 +229,34 @@ const cancelOrderAdmin = async (req, res) => {
             });
         }
 
+        if (order.paymentStatus === 'Paid') {
+            if (order.paymentMethod === 'razorpay' || order.paymentMethod === 'wallet') {
+                const wallet = await Wallet.findOne({ user: order.userId });
+                if (!wallet) {
+                    const newWallet = new Wallet({
+                        user: order.userId,
+                        balance: order.totalAmount,
+                        transactions: [{
+                            type: 'CREDIT',
+                            amount: order.totalAmount,
+                            description: `Refund for cancelled order #${order.orderId}`,
+                            orderId: order._id
+                        }]
+                    });
+                    await newWallet.save();
+                } else {
+                    wallet.balance += order.totalAmount;
+                    wallet.transactions.push({
+                        type: 'CREDIT',
+                        amount: order.totalAmount,
+                        description: `Refund for cancelled order #${order.orderId}`,
+                        orderId: order._id
+                    });
+                    await wallet.save();
+                }
+            }
+        }
+
         const bulkOps = order.items.map(item => ({
             updateOne: {
                 filter: { _id: item.productId },
@@ -243,10 +271,10 @@ const cancelOrderAdmin = async (req, res) => {
 
         res.status(200).json({ 
             success: true, 
-            message: "Order cancelled successfully" 
+            message: "Order cancelled successfully and refund initiated" 
         });
     } catch (error) {
-        console.error(error);
+        console.error("Cancel order error:", error);
         res.status(500).json({ success: false, message: "Internal server error" });
     }
 };

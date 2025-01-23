@@ -51,6 +51,9 @@ walletModel.statics.getOrCreateWallet = async function(userId) {
 };
 
 walletModel.methods.addTransaction = async function(type, amount, description, orderId = null) {
+    if(!this.transactions){
+        this.transactions = []
+    }
     this.transactions.push({
         type,
         amount,

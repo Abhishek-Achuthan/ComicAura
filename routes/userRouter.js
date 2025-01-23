@@ -32,6 +32,7 @@ router.post("/verify-reset-otp", userController.verifyResetOTP);
 router.post("/reset-password", userController.resetPassword);
 
 router.get("/profile", userAuth.isLoggedIn, profileController.loadProfile);
+router.post("/profile/update", userAuth.isLoggedIn, profileController.updateProfile);
 router.post("/profile/change-password", userAuth.isLoggedIn, profileController.changePassword);
 router.post("/profile/send-email-otp", userAuth.isLoggedIn, profileController.sendEmailChangeOTP);
 router.post("/profile/change-email", userAuth.isLoggedIn, profileController.changeEmail);

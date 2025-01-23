@@ -81,7 +81,6 @@ const loadLogin = async (req, res) => {
     try {
         res.render("login");
     } catch (error) {
-        console.log("signup page not found");
         res.status(500).send("server error");
     }
 }
@@ -136,7 +135,6 @@ const loadOtp = async (req, res) => {
     try {
         res.render("otp");
     } catch (error) {
-        console.log("Error loading the otp Page :", error.message);
         res.status(500).send("Unable to load the page");
     }
 }

@@ -27,9 +27,9 @@ async function toggleWishlist(productId, button) {
             const icon = button.querySelector('i');
             
             if (button.classList.contains('active')) {
-                icon.className = 'bi bi-heart-fill'; // Filled heart
+                icon.className = 'bi bi-heart-fill'; 
             } else {
-                icon.className = 'bi bi-heart'; // Outlined heart
+                icon.className = 'bi bi-heart'; 
             }
 
             const Toast = Swal.mixin({

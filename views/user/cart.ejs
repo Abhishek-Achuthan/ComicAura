@@ -363,7 +363,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             const cartItems = document.getElementsByClassName('cart-item');
             if (cartItems.length > 0) {
-                initializePagination(cartItems.length, 2, 'cartItems', 'cartPagination');
+                initializePagination(cartItems.length, 5, 'cartItems', 'cartPagination');
             }
             
             const checkoutBtn = document.getElementById('checkoutBtn');
@@ -393,7 +393,7 @@
                             
                             const remainingItems = document.querySelectorAll('.cart-item');
                             if (remainingItems.length > 0) {
-                                initializePagination(remainingItems.length, 2, 'cartItems', 'cartPagination');
+                                initializePagination(remainingItems.length, 5, 'cartItems', 'cartPagination');
                             } else {
                                 showToast('success', 'Item removed from cart');
                                 setTimeout(() => location.reload(), 1000);

@@ -21,7 +21,6 @@ function showError(message) {
 async function fetchSalesData(timeframe) {
     toggleLoader('salesChartLoader', true);
     try {
-        console.log('Fetching sales data for timeframe:', timeframe);
         const response = await fetch(`/admin/dashboard/sales-data?timeFrame=${timeframe}`);
         
         if (response.redirected) {
@@ -29,14 +28,9 @@ async function fetchSalesData(timeframe) {
             return;
         }
 
-        console.log('Response status:', response.status);
         const data = await response.json();
-        console.log('Raw sales data:', data);
 
         if (data.success) {
-            // Update chart data
-            console.log('Updating chart with labels:', data.labels);
-            console.log('Updating chart with values:', data.values);
             
             salesChart.data.labels = data.labels;
             salesChart.data.datasets[0].data = data.values;
@@ -55,10 +49,7 @@ async function fetchSalesData(timeframe) {
                 console.warn('Total revenue element not found');
             }
 
-            // Update the chart
-            console.log('Updating chart...');
             salesChart.update();
-            console.log('Chart updated');
         } else {
             console.error('Failed to load sales data:', data.message);
             showError(data.message || 'Failed to load sales data');
@@ -83,7 +74,6 @@ async function fetchCategoryData() {
         if (!response.ok) throw new Error('Failed to fetch category data');
         
         const data = await response.json();
-        console.log('Category data:', data);
 
         if (data.success && data.categories && data.categories.length > 0) {
             // Update chart data
@@ -99,7 +89,6 @@ async function fetchCategoryData() {
 
             categoriesChart.update();
         } else {
-            console.log('No category data available');
             const ctx = categoriesChart.ctx;
             const width = categoriesChart.width;
             const height = categoriesChart.height;
@@ -154,13 +143,11 @@ async function updateTopProducts() {
     }
 }
 
-// Initialize sales chart
 const salesChartCtx = document.getElementById('salesChart');
 if (!salesChartCtx) {
     console.error('Sales chart canvas element not found!');
-} else {
-    console.log('Initializing sales chart...');
-}
+} 
+
 
 const salesChart = new Chart(salesChartCtx, {
     type: 'line',
@@ -235,16 +222,16 @@ const categoriesChart = new Chart(categoriesChartCtx, {
         datasets: [{
             data: [],
             backgroundColor: [
-                'rgba(255, 99, 132, 0.8)',   // Red
-                'rgba(54, 162, 235, 0.8)',   // Blue
-                'rgba(255, 206, 86, 0.8)',   // Yellow
-                'rgba(75, 192, 192, 0.8)',   // Teal
-                'rgba(153, 102, 255, 0.8)',  // Purple
-                'rgba(255, 159, 64, 0.8)',   // Orange
-                'rgba(76, 175, 80, 0.8)',    // Green
-                'rgba(233, 30, 99, 0.8)',    // Pink
-                'rgba(121, 85, 72, 0.8)',    // Brown
-                'rgba(96, 125, 139, 0.8)'    // Blue Grey
+                'rgba(255, 99, 132, 0.8)',
+                'rgba(54, 162, 235, 0.8)',
+                'rgba(255, 206, 86, 0.8)',  
+                'rgba(75, 192, 192, 0.8)',
+                'rgba(153, 102, 255, 0.8)', 
+                'rgba(255, 159, 64, 0.8)',  
+                'rgba(76, 175, 80, 0.8)',  
+                'rgba(233, 30, 99, 0.8)', 
+                'rgba(121, 85, 72, 0.8)',  
+                'rgba(96, 125, 139, 0.8)'    
             ],
             borderColor: '#fff',
             borderWidth: 2
@@ -301,19 +288,15 @@ const categoriesChart = new Chart(categoriesChartCtx, {
 
 // Add event listeners
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOM loaded, initializing...');
     
     const timeFilter = document.getElementById('timeFilter');
     if (!timeFilter) {
         console.error('Time filter element not found!');
     } else {
         timeFilter.addEventListener('change', function(e) {
-            console.log('Time filter changed to:', e.target.value);
             fetchSalesData(e.target.value);
         });
         
-        // Initial load with monthly data
-        console.log('Loading initial monthly data...');
         fetchSalesData('monthly');
     }
 

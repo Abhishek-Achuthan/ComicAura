@@ -251,7 +251,57 @@ async function viewOrderDetails(orderId) {
     }
 }
 
+// Function to update user profile
+async function updateProfile(event) {
+    event.preventDefault();
+    
+    const form = event.target;
+    const firstName = form.querySelector('[name="firstName"]').value;
+    const lastName = form.querySelector('[name="lastName"]').value;
+    const phoneNumber = form.querySelector('[name="phoneNumber"]').value;
 
+    if (!firstName || !lastName || !phoneNumber) {
+        showErrorToast('All fields are required');
+        return;
+    }
+
+    if (!/^\d{10}$/.test(phoneNumber)) {
+        showErrorToast('Please enter a valid 10-digit phone number');
+        return;
+    }
+
+    try {
+        const response = await fetch('/profile/update', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ firstName, lastName, phoneNumber })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            // Update form values with new data
+            form.querySelector('[name="firstName"]').value = data.user.firstName;
+            form.querySelector('[name="lastName"]').value = data.user.lastName;
+            form.querySelector('[name="phoneNumber"]').value = data.user.phoneNumber;
+            
+            // Show success message
+            showToast('success', 'Profile updated successfully');
+            
+            // Reload page to update all user information
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } else {
+            showErrorToast(data.message || 'Failed to update profile');
+        }
+    } catch (error) {
+        console.error('Error updating profile:', error);
+        showErrorToast('An error occurred while updating profile');
+    }
+}
 
 async function editModal(addressId) {
     const address = window.addresses.address.find(addr => addr._id === addressId);
@@ -634,6 +684,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
+// Profile update form handler
+const profileForm = document.getElementById('profile-details-form');
+if (profileForm) {
+    profileForm.addEventListener('submit', updateProfile);
+}
+
 // Wallet Functions
 function showAddMoneyModal() {
     const modal = new bootstrap.Modal(document.getElementById('addMoneyModal'));
@@ -942,7 +998,6 @@ async function addAddress(event) {
                 data[key] = value.trim();
             }
         });
-        console.log('Data to be sent to backend:', data);
 
         const isDefaultCb = document.getElementById('defaultAddress');
         data.isDefault = isDefaultCb.checked;
@@ -978,13 +1033,8 @@ async function updateAddress(event) {
 
     try {
         const editAddressForm = document.getElementById('editAddressForm');
-        console.log('Edit Form:', editAddressForm);
         
         const formData = new FormData(editAddressForm);
-        console.log('Raw Form Data:');
-        for (let [key, value] of formData.entries()) {
-            console.log(`${key}: ${value}`);
-        }
 
         const errors = validateAddressForm(formData);
         if (errors.length > 0) {
@@ -1003,7 +1053,6 @@ async function updateAddress(event) {
                 data[key] = value.trim();
             }
         });
-        console.log('Data to be sent to backend:', data);
 
         const isDefaultCb = document.getElementById('editDefaultAddress');
         data.isDefault = isDefaultCb.checked;
@@ -1040,20 +1089,12 @@ async function updateAddress(event) {
 function validateAddressForm(formData) {
     const errors = [];
     
-    // Log all form data for debugging
-    console.log('Validating form data:');
-    for (let [key, value] of formData.entries()) {
-        console.log(`${key}: ${value}`);
-    }
-    
     const name = formData.get('name') || formData.get('fullName');
     if (!name || name.trim().length < 3) {
         errors.push('Name must be at least 3 characters long');
     }
 
-    // Phone validation with both possible field names
     const phoneNumber = formData.get('phoneNumber') || formData.get('phone');
-    console.log('Phone number from form:', phoneNumber);
     
     if (!phoneNumber) {
         errors.push('Phone number is required');
@@ -1090,7 +1131,6 @@ function validateAddressForm(formData) {
         errors.push('Please select an address type');
     }
 
-    console.log('Validation errors:', errors);
     return errors;
 }
 
