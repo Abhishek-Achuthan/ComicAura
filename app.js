@@ -9,9 +9,11 @@ const db = require("./config/database");
 const userRouter = require("./routes/userRouter")
 const adminRouter = require("./routes/adminRouter")
 const authRouter = require('./routes/authRouter');
+const nocache = require('nocache');
 
 db();
 
+app.use(nocache());
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({extended:true}));

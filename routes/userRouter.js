@@ -14,7 +14,7 @@ const couponController = require('../controllers/user/couponController');
 
 router.use(cartMiddleware);
 
-router.get("/",userAuth.isLoggedIn, userController.loadHomepage);
+router.get("/", userController.loadHomepage);
 router.get("/home", userAuth.isLoggedIn, userController.loadHomepage);
 router.get("/product/:id",userAuth.isLoggedIn, userController.loadProductDetails);
 
