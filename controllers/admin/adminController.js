@@ -971,7 +971,7 @@ const getTopCategories = async (req, res) => {
 
 const logout = async (req, res) => {
     try {
-        req.session.destroy();
+        req.session.userId = null;
         res.redirect('/admin');
     } catch (error) {
         console.error("Error during logout:", error);

@@ -346,7 +346,7 @@ const loadProductDetails = async (req, res) => {
 
 const logout = async (req, res) => {
     try {
-        req.session.destroy();
+        req.session.userId = null;
         res.redirect('/login');
     } catch (error) {
         console.error("Error during logout:", error);
