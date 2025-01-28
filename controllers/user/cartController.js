@@ -128,7 +128,6 @@ const addToCart = async (req, res) => {
                 }]
             });
         } else {
-            // Check if product already exists in cart
             const existingItemIndex = cart.items.findIndex(item => 
                 item.productId.toString() === productId.toString()
             );
