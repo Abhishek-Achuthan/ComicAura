@@ -850,12 +850,12 @@ const loadDashboard = async (req, res) => {
 const getTopProducts = async (req, res) => {
     try {
         const orders = await Order.find({ 
-            paymentStatus: 'Paid'
+            paymentStatus: 'Paid',
+            orderStatus: 'Delivered'
         })
         .populate('items.productId', 'name price images')  
         .sort('-createdAt')
         .limit(100); 
-
         const productSales = new Map();
         
         orders.forEach(order => {
