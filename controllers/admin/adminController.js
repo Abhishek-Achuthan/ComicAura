@@ -850,11 +850,9 @@ const loadDashboard = async (req, res) => {
 const getTopProducts = async (req, res) => {
     try {
         const orders = await Order.find({ 
-            status: 'delivered',
-            paymentStatus: 'completed',
-            'items.product': { $exists: true }
+            paymentStatus: 'Paid'
         })
-        .populate('items.product', 'name price images')
+        .populate('items.productId', 'name price images')  
         .sort('-createdAt')
         .limit(100); 
 
@@ -862,14 +860,16 @@ const getTopProducts = async (req, res) => {
         
         orders.forEach(order => {
             order.items.forEach(item => {
-                if (!item.product) return;
+                if (!item.productId) {  
+                    return;
+                }
                 
-                const productId = item.product._id.toString();
+                const productId = item.productId._id.toString();  
                 const currentStats = productSales.get(productId) || {
-                    name: item.product.name,
+                    name: item.productId.name,  
                     unitsSold: 0,
                     revenue: 0,
-                    imageUrl: item.product.images?.[0] || ''
+                    imageUrl: item.productId.images?.[0] || ''  
                 };
 
                 currentStats.unitsSold += item.quantity;
